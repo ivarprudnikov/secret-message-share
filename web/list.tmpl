@@ -18,7 +18,7 @@
 
         {{range .}}
           <tr>
-            <td>{{ .Digest }}</td>
+            <td><a href="/message/show/{{ .Digest }}">{{ .Digest }}</a></td>
             <td>{{ .Created }}</td>
           </tr>
         {{end}}
