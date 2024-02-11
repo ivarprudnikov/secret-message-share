@@ -93,13 +93,7 @@ func showMsgHandler(store *storage.Store) http.HandlerFunc {
 		id := r.URL.Path
 		var msg *storage.Message
 		var err error
-		if r.Method == "GET" {
-			msg, err = store.GetMessage(id)
-			if err != nil {
-				sendError(w, "failed to get a message", err)
-				return
-			}
-		} else if r.Method == "POST" {
+		if r.Method == "POST" {
 			err := r.ParseForm()
 			if err != nil {
 				sendError(w, "failed to read request body parameters", err)
@@ -115,8 +109,15 @@ func showMsgHandler(store *storage.Store) http.HandlerFunc {
 				sendError(w, "failed to get a message", err)
 				return
 			}
-		} else {
-			w.WriteHeader(http.StatusMethodNotAllowed)
+		}
+
+		// if PIN was not successful then do the regular message
+		// retrieval
+		if msg == nil {
+			msg, err = store.GetMessage(id)
+		}
+		if err != nil {
+			sendError(w, "failed to get a message", err)
 			return
 		}
 		if msg == nil {
