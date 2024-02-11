@@ -10,6 +10,8 @@ import (
 	"time"
 )
 
+const MAX_PIN_ATTEMPTS = 5
+
 type Store struct {
 	messages sync.Map
 }
@@ -45,6 +47,7 @@ func (s *Store) AddMessage(text string) (Message, error) {
 		Digest:  textHashHex,
 		Created: time.Now(),
 		Pin:     fmt.Sprintf("%d", pin),
+		Attempt: 0,
 	}
 	s.messages.Store(msg.Digest, msg)
 	return msg, nil
@@ -68,6 +71,8 @@ func (s *Store) GetFullMessage(id string, pin string) (*Message, error) {
 	if v, ok := s.messages.Load(id); ok {
 		if msg, ok := v.(Message); ok {
 			if msg.Pin == pin {
+				// self destruct the message after successful retrieval
+				s.messages.Delete(id)
 				return &Message{
 					Digest:  msg.Digest,
 					Created: msg.Created,
@@ -75,7 +80,17 @@ func (s *Store) GetFullMessage(id string, pin string) (*Message, error) {
 					Pin:     msg.Pin,
 				}, nil
 			}
+
+			// If the pin was wrong then start tracking attempts
+			if msg.Attempt > MAX_PIN_ATTEMPTS {
+				s.messages.Delete(id)
+			} else {
+				msg.Attempt += 1
+				s.messages.Store(id, msg)
+			}
 		} else {
+			// do not keep broken messages
+			s.messages.Delete(id)
 			return nil, fmt.Errorf("unexpected message type")
 		}
 	}
@@ -83,10 +98,11 @@ func (s *Store) GetFullMessage(id string, pin string) (*Message, error) {
 }
 
 type Message struct {
-	Content string    `json:"content,omitempty"`
 	Digest  string    `json:"digest"`
-	Pin     string    `json:"pin,omitempty"`
 	Created time.Time `json:"created"`
+	Content string    `json:"content,omitempty"`
+	Pin     string    `json:"pin,omitempty"`
+	Attempt int       `json:"Attempt,omitempty"`
 }
 
 // simple pin generator
