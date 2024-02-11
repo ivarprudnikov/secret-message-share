@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html lang="en">
+{{template "head.tmpl"}}
+<body>
+  <div class="container">
+    {{template "nav.tmpl"}}
+    
+    <h1>Error</h1>
+    <p>{{ .Message }}</p>
+    <p>{{ .Error }}</p>
+
+    {{template "footer.tmpl"}}
+  </div>
+</body>
+</html>

@@ -4,9 +4,7 @@ import (
 	"embed"
 	"html/template"
 
-	"encoding/json"
 	"errors"
-	"fmt"
 	"log"
 	"net/http"
 
@@ -34,7 +32,7 @@ func AddRoutes(mux *http.ServeMux, messageStore *storage.Store) {
 // indexHandler returns the main index page
 func indexHandler(w http.ResponseWriter, r *http.Request) {
 	if r.URL.Path != "/" {
-		w.WriteHeader(http.StatusNotFound)
+		send404(w)
 		return
 	}
 	w.Header().Set("Cache-Control", "no-cache, no-store, must-revalidate") // HTTP 1.1
@@ -122,7 +120,7 @@ func showMsgHandler(store *storage.Store) http.HandlerFunc {
 			return
 		}
 		if msg == nil {
-			w.WriteHeader(http.StatusNotFound)
+			send404(w)
 			return
 		}
 		tmpl.ExecuteTemplate(w, "show.tmpl", msg)
@@ -140,15 +138,15 @@ func sendError(w http.ResponseWriter, message string, err error) {
 		err = errors.New(message)
 	}
 	log.Printf("%s: %+v", message, err)
-	w.Header().Set("Content-Type", "application/json")
 	apiError := ApiError{
 		Message: message,
 		Error:   err.Error(),
 	}
-	apiErrorJson, marshalErr := json.Marshal(apiError)
-	if marshalErr != nil {
-		log.Fatalf("failed to marshal error: %+v", marshalErr)
-	}
 	w.WriteHeader(http.StatusBadRequest)
-	fmt.Fprint(w, string(apiErrorJson))
+	tmpl.ExecuteTemplate(w, "400.tmpl", apiError)
+}
+
+func send404(w http.ResponseWriter) {
+	w.WriteHeader(http.StatusNotFound)
+	tmpl.ExecuteTemplate(w, "404.tmpl", nil)
 }
