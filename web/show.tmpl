@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+{{template "head.tmpl"}}
+<body>
+  <div class="container">
+    {{template "nav.tmpl"}}
+    
+    <h1>Message</h1>
+
+    <p>ID: {{ .Digest }}</p>
+    <p>Created at: {{ .Created }}</p>
+    {{if .Pin}}
+      <p>PIN: {{.Pin}}</p>
+    {{else}}
+      <form id="show" class="my-4" name="show" action="/message/show/{{ .Digest }}" method="POST">
+        <div class="mb-3">
+          <label for="pin" class="form-label">PIN</label>
+          <input type="password" name="pin" class="form-control" aria-describedby="pinHelp" id="pin" placeholder="secret PIN" />
+          <div id="pinHelp" class="form-text">Provide a PIN to unloc content</div>
+        </div>
+        <button type="submit" class="btn btn-primary">Validate PIN</button>
+      </form>
+    {{end}}
+    {{if .Content}}<p>Content: {{.Content}}</p>{{end}}
+
+    {{template "footer.tmpl"}}
+  </div>
+</body>
+</html>

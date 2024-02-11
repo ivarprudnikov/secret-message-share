@@ -1,7 +1,9 @@
 package main
 
 import (
-	_ "embed"
+	"embed"
+	"html/template"
+
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -11,12 +13,18 @@ import (
 	"github.com/ivarprudnikov/secretshare/internal/storage"
 )
 
-//go:embed web/index.html
-var indexHtml string
+//go:embed web
+var templatesFs embed.FS
+
+var tmpl *template.Template
 
 const MAX_FORM_SIZE = int64(3 << 20) // 3 MB
 
-func addRoutes(mux *http.ServeMux, messageStore *storage.Store) {
+func init() {
+	tmpl = template.Must(template.ParseFS(templatesFs, "web/*.tmpl"))
+}
+
+func AddRoutes(mux *http.ServeMux, messageStore *storage.Store) {
 	mux.HandleFunc("/message/list", listMsgHandler(messageStore))
 	mux.HandleFunc("/message/create", createMsgHandler(messageStore))
 	mux.Handle("/message/show/", http.StripPrefix("/message/show/", showMsgHandler(messageStore)))
@@ -33,7 +41,7 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Pragma", "no-cache")                                   // HTTP 1.0
 	w.Header().Set("Expires", "0")                                         // Proxies
 	w.Header().Add("Content-Type", "text/html")
-	fmt.Fprint(w, indexHtml)
+	tmpl.ExecuteTemplate(w, "index.tmpl", nil)
 }
 
 func listMsgHandler(store *storage.Store) http.HandlerFunc {
@@ -42,27 +50,27 @@ func listMsgHandler(store *storage.Store) http.HandlerFunc {
 			w.WriteHeader(http.StatusMethodNotAllowed)
 			return
 		}
-		msgs, err := store.ListMessages()
+		messages, err := store.ListMessages()
 		if err != nil {
 			sendError(w, "failed to list messages", err)
 			return
 		}
-		w.Header().Add("Content-Type", "application/json")
-		marshalled, err := json.Marshal(msgs)
-		if err != nil {
-			sendError(w, "failed to render messages", err)
-			return
-		}
-		fmt.Fprint(w, string(marshalled))
+		tmpl.ExecuteTemplate(w, "list.tmpl", messages)
 	}
 }
 
 func createMsgHandler(store *storage.Store) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == "GET" {
+			tmpl.ExecuteTemplate(w, "create.tmpl", nil)
+			return
+		}
+
 		if r.Method != "POST" {
 			w.WriteHeader(http.StatusMethodNotAllowed)
 			return
 		}
+
 		err := r.ParseMultipartForm(MAX_FORM_SIZE)
 		if err != nil {
 			sendError(w, "failed to read request body parameters", err)
@@ -78,13 +86,7 @@ func createMsgHandler(store *storage.Store) http.HandlerFunc {
 			sendError(w, "failed to store message", err)
 			return
 		}
-		w.Header().Add("Content-Type", "application/json")
-		marshalled, err := json.Marshal(msg)
-		if err != nil {
-			sendError(w, "failed to render message", err)
-			return
-		}
-		fmt.Fprint(w, string(marshalled))
+		tmpl.ExecuteTemplate(w, "created.tmpl", msg)
 	}
 }
 
@@ -123,13 +125,7 @@ func showMsgHandler(store *storage.Store) http.HandlerFunc {
 			w.WriteHeader(http.StatusNotFound)
 			return
 		}
-		w.Header().Add("Content-Type", "application/json")
-		marshalled, err := json.Marshal(msg)
-		if err != nil {
-			sendError(w, "failed to render a message", err)
-			return
-		}
-		fmt.Fprint(w, string(marshalled))
+		tmpl.ExecuteTemplate(w, "show.tmpl", msg)
 	}
 }
 

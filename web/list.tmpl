@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+{{template "head.tmpl"}}
+<body>
+  <div class="container">
+    {{template "nav.tmpl"}}
+    
+    <h1>Messages</h1>
+
+    <table class="table">
+      <thead>
+        <tr>
+          <th scope="col">ID</th>
+          <th scope="col">Created at</th>
+        </tr>
+      </thead>
+      <tbody>
+
+        {{range .}}
+          <tr>
+            <td>{{ .Digest }}</td>
+            <td>{{ .Created }}</td>
+          </tr>
+        {{end}}
+        
+      </tbody>
+    </table>
+
+    {{template "footer.tmpl"}}
+  </div>
+</body>
+</html>
