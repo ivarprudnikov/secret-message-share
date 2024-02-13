@@ -79,7 +79,7 @@ func createMsgHandler(store *storage.Store) http.HandlerFunc {
 			sendError(w, "payload is empty", nil)
 			return
 		}
-		msg, err := store.AddMessage(payload)
+		msg, err := store.AddMessage(payload, "someuser")
 		if err != nil {
 			sendError(w, "failed to store message", err)
 			return

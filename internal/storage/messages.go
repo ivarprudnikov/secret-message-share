@@ -1,10 +1,6 @@
 package storage
 
 import (
-	"crypto/rand"
-	"crypto/sha256"
-	"encoding/binary"
-	"encoding/hex"
 	"fmt"
 	"sync"
 	"time"
@@ -35,21 +31,21 @@ func (s *Store) ListMessages() ([]Message, error) {
 	return msgs, nil
 }
 
-func (s *Store) AddMessage(text string) (Message, error) {
-	textHash := sha256.Sum256([]byte(text))
-	textHashHex := hex.EncodeToString(textHash[:])
-	pin, err := makePin()
+func (s *Store) AddMessage(text string, username string) (Message, error) {
+	pin, err := MakePin()
 	if err != nil {
 		return Message{}, err
 	}
 	msg := Message{
-		Content: text,
-		Digest:  textHashHex,
-		Created: time.Now(),
-		Pin:     fmt.Sprintf("%d", pin),
-		Attempt: 0,
+		Username: username,
+		Content:  text,
+		Digest:   HashText(text),
+		Created:  time.Now(),
+		Pin:      HashText(pin),
+		Attempt:  0,
 	}
 	s.messages.Store(msg.Digest, msg)
+	msg.Pin = pin
 	return msg, nil
 }
 
@@ -70,14 +66,15 @@ func (s *Store) GetMessage(id string) (*Message, error) {
 func (s *Store) GetFullMessage(id string, pin string) (*Message, error) {
 	if v, ok := s.messages.Load(id); ok {
 		if msg, ok := v.(Message); ok {
-			if msg.Pin == pin {
+			if msg.Pin == HashText(pin) {
 				// self destruct the message after successful retrieval
 				s.messages.Delete(id)
 				return &Message{
-					Digest:  msg.Digest,
-					Created: msg.Created,
-					Content: msg.Content,
-					Pin:     msg.Pin,
+					Username: msg.Username,
+					Digest:   msg.Digest,
+					Created:  msg.Created,
+					Content:  msg.Content,
+					Pin:      msg.Pin,
 				}, nil
 			}
 
@@ -98,20 +95,10 @@ func (s *Store) GetFullMessage(id string, pin string) (*Message, error) {
 }
 
 type Message struct {
-	Digest  string    `json:"digest"`
-	Created time.Time `json:"created"`
-	Content string    `json:"content,omitempty"`
-	Pin     string    `json:"pin,omitempty"`
-	Attempt int       `json:"Attempt,omitempty"`
-}
-
-// simple pin generator
-func makePin() (uint16, error) {
-	c := 16
-	b := make([]byte, c)
-	_, err := rand.Read(b)
-	if err != nil {
-		return 0, err
-	}
-	return binary.BigEndian.Uint16(b), nil
+	Username string    `json:"user_displayname"`
+	Digest   string    `json:"digest"`
+	Created  time.Time `json:"created"`
+	Content  string    `json:"content,omitempty"`
+	Pin      string    `json:"pin,omitempty"`
+	Attempt  int       `json:"Attempt,omitempty"`
 }

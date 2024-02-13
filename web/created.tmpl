@@ -9,7 +9,7 @@
 
     <p>ID: <a href="/message/show/{{ .Digest }}">{{ .Digest }}</a></p>
     <p>Created at: {{ .Created }}</p>
-    <p>PIN: {{.Pin}}</p>
+    <p class="fw-bold">PIN: {{.Pin}}</p>
     <p>Content: {{.Content}}</p>
 
     {{template "footer.tmpl"}}
