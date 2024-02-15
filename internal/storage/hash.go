@@ -6,7 +6,6 @@ import (
 	"crypto/sha256"
 	"encoding/binary"
 	"encoding/hex"
-	"errors"
 	"fmt"
 	"io"
 
@@ -36,12 +35,12 @@ func StrongKey(passText string, saltText string) ([]byte, error) {
 	hashFn := sha256.New
 	hashSize := hashFn().Size()
 	passBytes := []byte(passText)
-	if len(saltText) != hashSize/8 {
-		return nil, errors.New("invalid salt length")
+	if len(saltText) != hashSize {
+		return nil, fmt.Errorf("invalid salt length, must be %d", hashSize)
 	}
 	saltBytes := []byte(saltText)
 	hkdf := hkdf.New(hashFn, passBytes, saltBytes, nil)
-	key := make([]byte, 32) // 256-bit key
+	key := make([]byte, 16) // 128-bit key
 	if _, err := io.ReadFull(hkdf, key); err != nil {
 		return nil, err
 	}
@@ -55,6 +54,7 @@ func EncryptAES(key []byte, plaintext string) (string, error) {
 		return "", err
 	}
 	out := make([]byte, len(plaintext))
+	// FIXME pad the text to reach minimum block size
 	c.Encrypt(out, []byte(plaintext))
 	return hex.EncodeToString(out), nil
 }

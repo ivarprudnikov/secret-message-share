@@ -9,6 +9,8 @@ import (
 	"github.com/ivarprudnikov/secretshare/internal/storage"
 )
 
+const salt = "12345678123456781234567812345678"
+
 func NewHttpHandler(store *storage.Store) http.Handler {
 	mux := http.NewServeMux()
 	AddRoutes(mux, store)
@@ -17,7 +19,13 @@ func NewHttpHandler(store *storage.Store) http.Handler {
 
 // main starts the server
 func main() {
-	messageStore := storage.NewStore()
+
+	_, err := storage.StrongKey("123", salt)
+	if err != nil {
+		panic(err)
+	}
+
+	messageStore := storage.NewStore(salt)
 	handler := NewHttpHandler(messageStore)
 	port := getPort()
 	listenAddr := ":" + port
