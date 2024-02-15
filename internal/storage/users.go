@@ -1,6 +1,7 @@
 package storage
 
 import (
+	"errors"
 	"sync"
 	"time"
 )
@@ -15,6 +16,9 @@ func NewUserStore(salt string) *UserStore {
 }
 
 func (u *UserStore) AddUser(username string, password string) (User, error) {
+	if _, ok := u.users.Load(username); ok {
+		return User{}, errors.New("username is not available")
+	}
 	usr := NewUser(username, password)
 	u.users.Store(usr.Username, usr)
 	return usr, nil

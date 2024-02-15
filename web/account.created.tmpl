@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html lang="en">
+{{template "head.tmpl"}}
+<body>
+  <div class="container">
+    {{template "nav.tmpl"}}
+    
+    <h1>Account ceated</h1>
+    <p>Your username: {{ .Username }}</p>
+    <p>Created at: {{ .Created }}</p>
+
+    {{template "footer.tmpl"}}
+  </div>
+</body>
+</html>

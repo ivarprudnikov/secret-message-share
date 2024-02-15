@@ -11,16 +11,17 @@ import (
 
 const salt = "12345678123456781234567812345678"
 
-func NewHttpHandler(store *storage.MessageStore) http.Handler {
+func NewHttpHandler(messages *storage.MessageStore, users *storage.UserStore) http.Handler {
 	mux := http.NewServeMux()
-	AddRoutes(mux, store)
+	AddRoutes(mux, messages, users)
 	return mux
 }
 
 // main starts the server
 func main() {
-	messageStore := storage.NewMessageStore(salt)
-	handler := NewHttpHandler(messageStore)
+	messages := storage.NewMessageStore(salt)
+	users := storage.NewUserStore(salt)
+	handler := NewHttpHandler(messages, users)
 	port := getPort()
 	listenAddr := ":" + port
 	log.Printf("About to listen on %s. Go to http://127.0.0.1%s/", listenAddr, listenAddr)

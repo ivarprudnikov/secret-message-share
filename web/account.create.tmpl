@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+{{template "head.tmpl"}}
+<body>
+  <div class="container">
+    {{template "nav.tmpl"}}
+    
+    <div class="row">
+      <div class="col-md-6">
+        <h3>Craete your account</h3>
+        <form id="create" class="my-4" name="create" action="/account/create" method="POST">
+          <div class="mb-3">
+            <label for="username" class="form-label">Username</label>
+            <input type="text" name="username" class="form-control" aria-describedby="usernameHelp" id="username" placeholder="doejoe" />
+            <div id="usernameHelp" class="form-text">Create your unique username</div>
+          </div>
+          <div class="mb-3">
+            <label for="password" class="form-label">Password</label>
+            <input type="password" name="password" class="form-control" aria-describedby="passwordHelp" id="password" />
+            <div id="passwordHelp" class="form-text">Please use secure password</div>
+          </div>
+          <div class="mb-3">
+            <label for="password2" class="form-label">Repeat password</label>
+            <input type="password" name="password2" class="form-control" aria-describedby="password2Help" id="password2" />
+            <div id="password2Help" class="form-text">Type in the same password as above</div>
+          </div>
+          <button type="submit" class="btn btn-primary">Create account</button>
+        </form>
+      </div>
+    </div>
+
+    {{template "footer.tmpl"}}
+  </div>
+</body>
+</html>

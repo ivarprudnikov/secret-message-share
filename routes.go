@@ -22,10 +22,13 @@ func init() {
 	tmpl = template.Must(template.ParseFS(templatesFs, "web/*.tmpl"))
 }
 
-func AddRoutes(mux *http.ServeMux, messageStore *storage.MessageStore) {
-	mux.HandleFunc("/message/list", listMsgHandler(messageStore))
-	mux.HandleFunc("/message/create", createMsgHandler(messageStore))
-	mux.Handle("/message/show/", http.StripPrefix("/message/show/", showMsgHandler(messageStore)))
+func AddRoutes(mux *http.ServeMux, messages *storage.MessageStore, users *storage.UserStore) {
+	mux.HandleFunc("/account/create", createAccountHandler(users))
+
+	mux.HandleFunc("/message/list", listMsgHandler(messages))
+	mux.HandleFunc("/message/create", createMsgHandler(messages))
+	mux.Handle("/message/show/", http.StripPrefix("/message/show/", showMsgHandler(messages)))
+
 	mux.HandleFunc("/", indexHandler)
 }
 
@@ -40,6 +43,45 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Expires", "0")                                         // Proxies
 	w.Header().Add("Content-Type", "text/html")
 	tmpl.ExecuteTemplate(w, "index.tmpl", nil)
+}
+
+func createAccountHandler(store *storage.UserStore) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == "GET" {
+			tmpl.ExecuteTemplate(w, "account.create.tmpl", nil)
+			return
+		}
+		if r.Method != "POST" {
+			w.WriteHeader(http.StatusMethodNotAllowed)
+			return
+		}
+		err := r.ParseForm()
+		if err != nil {
+			sendError(w, "failed to read request body parameters", err)
+			return
+		}
+		username := r.PostForm.Get("username")
+		if username == "" {
+			sendError(w, "username is empty", nil)
+			return
+		}
+		password := r.PostForm.Get("password")
+		if password == "" {
+			sendError(w, "password is empty", nil)
+			return
+		}
+		password2 := r.PostForm.Get("password2")
+		if password2 != password {
+			sendError(w, "passwords do not match", nil)
+			return
+		}
+		usr, err := store.AddUser(username, password)
+		if err != nil {
+			sendError(w, "failed to create account", err)
+			return
+		}
+		tmpl.ExecuteTemplate(w, "account.created.tmpl", usr)
+	}
 }
 
 func listMsgHandler(store *storage.MessageStore) http.HandlerFunc {
