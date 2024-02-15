@@ -4,6 +4,7 @@ import (
 	"crypto/aes"
 	"crypto/rand"
 	"crypto/sha256"
+	"encoding/base64"
 	"encoding/binary"
 	"encoding/hex"
 	"fmt"
@@ -20,14 +21,20 @@ func HashText(text string) string {
 
 // simple pin generator
 func MakePin() (string, error) {
-	c := 16
-	b := make([]byte, c)
-	_, err := rand.Read(b)
-	if err != nil {
+	b := make([]byte, 16)
+	if _, err := rand.Read(b); err != nil {
 		return "", err
 	}
 	pin := binary.BigEndian.Uint16(b)
 	return fmt.Sprintf("%d", pin), nil
+}
+
+func MakeToken() (string, error) {
+	b := make([]byte, 32)
+	if _, err := rand.Read(b); err != nil {
+		return "", err
+	}
+	return base64.URLEncoding.EncodeToString(b), nil
 }
 
 // use hkdf to derive a strong key (RFC5869)

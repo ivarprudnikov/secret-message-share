@@ -8,6 +8,7 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/gorilla/sessions"
 	"github.com/ivarprudnikov/secretshare/internal/storage"
 )
 
@@ -17,18 +18,25 @@ var templatesFs embed.FS
 var tmpl *template.Template
 
 const MAX_FORM_SIZE = int64(3 << 20) // 3 MB
+const SESS_NAME = "any"
+const SESS_USER = "user"
+const SESS_CSRF = "csrf"
 
 func init() {
 	tmpl = template.Must(template.ParseFS(templatesFs, "web/*.tmpl"))
 }
 
-func AddRoutes(mux *http.ServeMux, messages *storage.MessageStore, users *storage.UserStore) {
+func AddRoutes(
+	mux *http.ServeMux,
+	sessions *sessions.CookieStore,
+	messages *storage.MessageStore,
+	users *storage.UserStore,
+) {
+	mux.HandleFunc("/account/login", loginAccountHandler(sessions, users))
 	mux.HandleFunc("/account/create", createAccountHandler(users))
-
 	mux.HandleFunc("/message/list", listMsgHandler(messages))
 	mux.HandleFunc("/message/create", createMsgHandler(messages))
 	mux.Handle("/message/show/", http.StripPrefix("/message/show/", showMsgHandler(messages)))
-
 	mux.HandleFunc("/", indexHandler)
 }
 
@@ -43,6 +51,69 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Expires", "0")                                         // Proxies
 	w.Header().Add("Content-Type", "text/html")
 	tmpl.ExecuteTemplate(w, "index.tmpl", nil)
+}
+
+func loginAccountHandler(sessions *sessions.CookieStore, store *storage.UserStore) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		sess, _ := sessions.Get(r, SESS_NAME)
+		if r.Method == "GET" {
+			t, err := storage.MakeToken()
+			if err != nil {
+				sendError(w, "failed to setup csrf", err)
+				return
+			}
+			sess.Values[SESS_CSRF] = t
+			err = sess.Save(r, w)
+			if err != nil {
+				sendError(w, "failed to setup csrf", err)
+				return
+			}
+			tmpl.ExecuteTemplate(w, "account.login.tmpl", map[string]interface{}{
+				SESS_CSRF: t,
+			})
+			return
+		}
+		if r.Method != "POST" {
+			w.WriteHeader(http.StatusMethodNotAllowed)
+			return
+		}
+		err := r.ParseForm()
+		if err != nil {
+			sendError(w, "failed to read request body parameters", err)
+			return
+		}
+		csrf := r.PostForm.Get("_csrf")
+		if csrf == "" || csrf != sess.Values[SESS_CSRF] {
+			sendError(w, "invalid token", nil)
+			return
+		}
+		username := r.PostForm.Get("username")
+		if username == "" {
+			sendError(w, "username is empty", nil)
+			return
+		}
+		password := r.PostForm.Get("password")
+		if password == "" {
+			sendError(w, "password is empty", nil)
+			return
+		}
+		usr, err := store.GetUser(username, password)
+		if err != nil {
+			sendError(w, "failed to login", err)
+			return
+		}
+		if usr == nil {
+			w.WriteHeader(http.StatusUnauthorized)
+			return
+		}
+		sess.Values[SESS_USER] = username
+		err = sess.Save(r, w)
+		if err != nil {
+			sendError(w, "failed to save session", err)
+			return
+		}
+		http.Redirect(w, r, "/", http.StatusSeeOther)
+	}
 }
 
 func createAccountHandler(store *storage.UserStore) http.HandlerFunc {
