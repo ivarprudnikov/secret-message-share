@@ -53,14 +53,14 @@ func listMsgHandler(store *storage.MessageStore) http.HandlerFunc {
 			sendError(w, "failed to list messages", err)
 			return
 		}
-		tmpl.ExecuteTemplate(w, "list.tmpl", messages)
+		tmpl.ExecuteTemplate(w, "message.list.tmpl", messages)
 	}
 }
 
 func createMsgHandler(store *storage.MessageStore) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == "GET" {
-			tmpl.ExecuteTemplate(w, "create.tmpl", nil)
+			tmpl.ExecuteTemplate(w, "message.create.tmpl", nil)
 			return
 		}
 
@@ -84,7 +84,7 @@ func createMsgHandler(store *storage.MessageStore) http.HandlerFunc {
 			sendError(w, "failed to store message", err)
 			return
 		}
-		tmpl.ExecuteTemplate(w, "created.tmpl", msg)
+		tmpl.ExecuteTemplate(w, "message.created.tmpl", msg)
 	}
 }
 
@@ -124,7 +124,7 @@ func showMsgHandler(store *storage.MessageStore) http.HandlerFunc {
 			send404(w)
 			return
 		}
-		tmpl.ExecuteTemplate(w, "show.tmpl", msg)
+		tmpl.ExecuteTemplate(w, "message.show.tmpl", msg)
 	}
 }
 

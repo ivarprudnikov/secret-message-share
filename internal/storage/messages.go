@@ -58,6 +58,7 @@ func (s *MessageStore) ListMessages() ([]Message, error) {
 	return msgs, nil
 }
 
+// TODO: allow to reset the pin for the owner
 func (s *MessageStore) AddMessage(text string, username string) (Message, error) {
 	// an easy to enter pin
 	pin, err := MakePin()
