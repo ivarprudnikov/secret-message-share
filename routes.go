@@ -22,7 +22,7 @@ func init() {
 	tmpl = template.Must(template.ParseFS(templatesFs, "web/*.tmpl"))
 }
 
-func AddRoutes(mux *http.ServeMux, messageStore *storage.Store) {
+func AddRoutes(mux *http.ServeMux, messageStore *storage.MessageStore) {
 	mux.HandleFunc("/message/list", listMsgHandler(messageStore))
 	mux.HandleFunc("/message/create", createMsgHandler(messageStore))
 	mux.Handle("/message/show/", http.StripPrefix("/message/show/", showMsgHandler(messageStore)))
@@ -42,7 +42,7 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 	tmpl.ExecuteTemplate(w, "index.tmpl", nil)
 }
 
-func listMsgHandler(store *storage.Store) http.HandlerFunc {
+func listMsgHandler(store *storage.MessageStore) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != "GET" {
 			w.WriteHeader(http.StatusMethodNotAllowed)
@@ -57,7 +57,7 @@ func listMsgHandler(store *storage.Store) http.HandlerFunc {
 	}
 }
 
-func createMsgHandler(store *storage.Store) http.HandlerFunc {
+func createMsgHandler(store *storage.MessageStore) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == "GET" {
 			tmpl.ExecuteTemplate(w, "create.tmpl", nil)
@@ -88,7 +88,7 @@ func createMsgHandler(store *storage.Store) http.HandlerFunc {
 	}
 }
 
-func showMsgHandler(store *storage.Store) http.HandlerFunc {
+func showMsgHandler(store *storage.MessageStore) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		id := r.URL.Path
 		var msg *storage.Message

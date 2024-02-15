@@ -8,16 +8,16 @@ import (
 
 const MAX_PIN_ATTEMPTS = 5
 
-type Store struct {
+type MessageStore struct {
 	messages sync.Map
 	salt     string
 }
 
-func NewStore(salt string) *Store {
-	return &Store{messages: sync.Map{}, salt: salt}
+func NewMessageStore(salt string) *MessageStore {
+	return &MessageStore{messages: sync.Map{}, salt: salt}
 }
 
-func (s *Store) Encrypt(text string, pass string) (string, error) {
+func (s *MessageStore) Encrypt(text string, pass string) (string, error) {
 	// derive a key from the pass
 	key, err := StrongKey(pass, s.salt)
 	if err != nil {
@@ -30,7 +30,7 @@ func (s *Store) Encrypt(text string, pass string) (string, error) {
 	return cyphertext, nil
 }
 
-func (s *Store) Decrypt(cyphertext string, pass string) (string, error) {
+func (s *MessageStore) Decrypt(cyphertext string, pass string) (string, error) {
 	// derive a key from the pass
 	key, err := StrongKey(pass, s.salt)
 	if err != nil {
@@ -43,7 +43,7 @@ func (s *Store) Decrypt(cyphertext string, pass string) (string, error) {
 	return plaintext, nil
 }
 
-func (s *Store) ListMessages() ([]Message, error) {
+func (s *MessageStore) ListMessages() ([]Message, error) {
 	var msgs []Message
 	s.messages.Range(func(k, v any) bool {
 		if msg, ok := v.(Message); ok {
@@ -58,7 +58,7 @@ func (s *Store) ListMessages() ([]Message, error) {
 	return msgs, nil
 }
 
-func (s *Store) AddMessage(text string, username string) (Message, error) {
+func (s *MessageStore) AddMessage(text string, username string) (Message, error) {
 	// an easy to enter pin
 	pin, err := MakePin()
 	if err != nil {
@@ -76,7 +76,7 @@ func (s *Store) AddMessage(text string, username string) (Message, error) {
 	return msg, nil
 }
 
-func (s *Store) GetMessage(id string) (*Message, error) {
+func (s *MessageStore) GetMessage(id string) (*Message, error) {
 	if v, ok := s.messages.Load(id); ok {
 		if msg, ok := v.(Message); ok {
 			return &Message{
@@ -90,7 +90,7 @@ func (s *Store) GetMessage(id string) (*Message, error) {
 	return nil, nil
 }
 
-func (s *Store) GetFullMessage(id string, pin string) (*Message, error) {
+func (s *MessageStore) GetFullMessage(id string, pin string) (*Message, error) {
 	if v, ok := s.messages.Load(id); ok {
 		if msg, ok := v.(Message); ok {
 			// TODO use salted hash
@@ -103,7 +103,7 @@ func (s *Store) GetFullMessage(id string, pin string) (*Message, error) {
 
 				// self destruct the message after successful retrieval
 				s.messages.Delete(id)
-				
+
 				return &Message{
 					Username: msg.Username,
 					Digest:   msg.Digest,
