@@ -7,12 +7,13 @@
     
     <h1>Message</h1>
 
-    <p>ID: {{ .Digest }}</p>
-    <p>Created at: {{ .Created }}</p>
-    {{if .Pin}}
-      <p>PIN: {{.Pin}}</p>
+    <p>ID: {{ .message.Digest }}</p>
+    <p>Created at: {{ .message.Created }}</p>
+    {{if .message.Pin}}
+      <p>PIN: {{.message.Pin}}</p>
     {{else}}
-      <form id="show" class="my-4" name="show" action="/messages/{{ .Digest }}" method="POST">
+      <form id="show" class="my-4" name="show" action="/messages/{{ .message.Digest }}" method="POST">
+        <input type="hidden" name="_csrf" value="{{ .csrf }}" />
         <div class="mb-3">
           <label for="pin" class="form-label">PIN</label>
           <input type="password" name="pin" class="form-control" aria-describedby="pinHelp" id="pin" placeholder="secret PIN" />
@@ -21,7 +22,7 @@
         <button type="submit" class="btn btn-primary">Validate PIN</button>
       </form>
     {{end}}
-    {{if .Content}}<p>Content: {{.Content}}</p>{{end}}
+    {{if .message.Content}}<p>Content: {{.message.Content}}</p>{{end}}
 
     {{template "footer.tmpl"}}
   </div>

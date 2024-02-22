@@ -18,9 +18,10 @@ var templatesFs embed.FS
 var tmpl *template.Template
 
 const MAX_FORM_SIZE = int64(3 << 20) // 3 MB
-const SESS_NAME = "any"
+const SESS_CSRF_NAME = "session.csrf"
+const SESS_CSRF_KEY = "csrf"
+
 const SESS_USER = "user"
-const SESS_CSRF = "csrf"
 
 func init() {
 	tmpl = template.Must(template.ParseFS(templatesFs, "web/*.tmpl"))
@@ -32,16 +33,16 @@ func AddRoutes(
 	messages *storage.MessageStore,
 	users *storage.UserStore,
 ) {
-	mux.HandleFunc("GET /accounts/login", loginAccountHandler(sessions, users))
-	mux.HandleFunc("POST /accounts/login", loginAccountHandler(sessions, users))
-	mux.HandleFunc("GET /accounts/new", createAccountHandler(users))
-	mux.HandleFunc("POST /accounts", createAccountHandler(users))
-
-	mux.HandleFunc("GET /messages", listMsgHandler(messages))
-	mux.HandleFunc("POST /messages", createMsgHandler(messages))
-	mux.HandleFunc("GET /messages/new", createMsgHandler(messages))
-	mux.Handle("GET /messages/{id}", showMsgHandler(messages))
-	mux.Handle("POST /messages/{id}", showMsgHandler(messages))
+	preReq := newAppMiddleware(sessions, users)
+	mux.Handle("GET /accounts/login", preReq(loginPageHandler(sessions)))
+	mux.Handle("POST /accounts/login", preReq(loginAccountHandler(sessions, users)))
+	mux.Handle("GET /accounts/new", preReq(createAccountPageHandler(sessions)))
+	mux.Handle("POST /accounts", preReq(createAccountHandler(sessions, users)))
+	mux.Handle("GET /messages", preReq(listMsgHandler(messages)))
+	mux.Handle("POST /messages", preReq(createMsgHandler(sessions, messages)))
+	mux.Handle("GET /messages/new", preReq(createMsgPageHandler(sessions)))
+	mux.Handle("GET /messages/{id}", preReq(showMsgHandler(sessions, messages)))
+	mux.Handle("POST /messages/{id}", preReq(showMsgFullHandler(sessions, messages)))
 	mux.HandleFunc("GET /", indexHandler)
 }
 
@@ -58,37 +59,23 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 	tmpl.ExecuteTemplate(w, "index.tmpl", nil)
 }
 
+func loginPageHandler(sessions *sessions.CookieStore) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		sess, _ := sessions.Get(r, SESS_CSRF_NAME)
+		tmpl.ExecuteTemplate(w, "account.login.tmpl", sess.Values)
+	}
+}
+
 func loginAccountHandler(sessions *sessions.CookieStore, store *storage.UserStore) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		sess, _ := sessions.Get(r, SESS_NAME)
-		if r.Method == "GET" {
-			t, err := storage.MakeToken()
-			if err != nil {
-				sendError(w, "failed to setup csrf", err)
-				return
-			}
-			sess.Values[SESS_CSRF] = t
-			err = sess.Save(r, w)
-			if err != nil {
-				sendError(w, "failed to setup csrf", err)
-				return
-			}
-			tmpl.ExecuteTemplate(w, "account.login.tmpl", map[string]interface{}{
-				SESS_CSRF: t,
-			})
-			return
-		}
-		if r.Method != "POST" {
-			w.WriteHeader(http.StatusMethodNotAllowed)
-			return
-		}
 		err := r.ParseForm()
 		if err != nil {
 			sendError(w, "failed to read request body parameters", err)
 			return
 		}
+		sess, _ := sessions.Get(r, SESS_CSRF_NAME)
 		csrf := r.PostForm.Get("_csrf")
-		if csrf == "" || csrf != sess.Values[SESS_CSRF] {
+		if csrf == "" || csrf != sess.Values[SESS_CSRF_KEY] {
 			sendError(w, "invalid token", nil)
 			return
 		}
@@ -121,19 +108,24 @@ func loginAccountHandler(sessions *sessions.CookieStore, store *storage.UserStor
 	}
 }
 
-func createAccountHandler(store *storage.UserStore) http.HandlerFunc {
+func createAccountPageHandler(sessions *sessions.CookieStore) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if r.Method == "GET" {
-			tmpl.ExecuteTemplate(w, "account.create.tmpl", nil)
-			return
-		}
-		if r.Method != "POST" {
-			w.WriteHeader(http.StatusMethodNotAllowed)
-			return
-		}
+		sess, _ := sessions.Get(r, SESS_CSRF_NAME)
+		tmpl.ExecuteTemplate(w, "account.create.tmpl", sess.Values)
+	}
+}
+
+func createAccountHandler(sessions *sessions.CookieStore, store *storage.UserStore) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
 		err := r.ParseForm()
 		if err != nil {
 			sendError(w, "failed to read request body parameters", err)
+			return
+		}
+		sess, _ := sessions.Get(r, SESS_CSRF_NAME)
+		csrf := r.PostForm.Get("_csrf")
+		if csrf == "" || csrf != sess.Values[SESS_CSRF_KEY] {
+			sendError(w, "invalid token", nil)
 			return
 		}
 		username := r.PostForm.Get("username")
@@ -175,21 +167,24 @@ func listMsgHandler(store *storage.MessageStore) http.HandlerFunc {
 	}
 }
 
-func createMsgHandler(store *storage.MessageStore) http.HandlerFunc {
+func createMsgPageHandler(sessions *sessions.CookieStore) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if r.Method == "GET" {
-			tmpl.ExecuteTemplate(w, "message.create.tmpl", nil)
-			return
-		}
+		sess, _ := sessions.Get(r, SESS_CSRF_NAME)
+		tmpl.ExecuteTemplate(w, "message.create.tmpl", sess.Values)
+	}
+}
 
-		if r.Method != "POST" {
-			w.WriteHeader(http.StatusMethodNotAllowed)
-			return
-		}
-
+func createMsgHandler(sessions *sessions.CookieStore, store *storage.MessageStore) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
 		err := r.ParseMultipartForm(MAX_FORM_SIZE)
 		if err != nil {
 			sendError(w, "failed to read request body parameters", err)
+			return
+		}
+		sess, _ := sessions.Get(r, SESS_CSRF_NAME)
+		csrf := r.PostForm.Get("_csrf")
+		if csrf == "" || csrf != sess.Values[SESS_CSRF_KEY] {
+			sendError(w, "invalid token", nil)
 			return
 		}
 		payload := r.PostForm.Get("payload")
@@ -197,6 +192,7 @@ func createMsgHandler(store *storage.MessageStore) http.HandlerFunc {
 			sendError(w, "payload is empty", nil)
 			return
 		}
+		// TODO only auth user is allowed
 		msg, err := store.AddMessage(payload, "someuser")
 		if err != nil {
 			sendError(w, "failed to store message", err)
@@ -206,34 +202,11 @@ func createMsgHandler(store *storage.MessageStore) http.HandlerFunc {
 	}
 }
 
-func showMsgHandler(store *storage.MessageStore) http.HandlerFunc {
+func showMsgHandler(sessions *sessions.CookieStore, store *storage.MessageStore) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		id := r.PathValue("id")
-		var msg *storage.Message
-		var err error
-		if r.Method == "POST" {
-			err := r.ParseForm()
-			if err != nil {
-				sendError(w, "failed to read request body parameters", err)
-				return
-			}
-			pin := r.PostForm.Get("pin")
-			if pin == "" {
-				sendError(w, "pin is empty", nil)
-				return
-			}
-			msg, err = store.GetFullMessage(id, pin)
-			if err != nil {
-				sendError(w, "failed to get a message", err)
-				return
-			}
-		}
-
-		// if PIN was not successful then do the regular message
-		// retrieval
-		if msg == nil {
-			msg, err = store.GetMessage(id)
-		}
+		msg, err := store.GetMessage(id)
+		sess, _ := sessions.Get(r, SESS_CSRF_NAME)
 		if err != nil {
 			sendError(w, "failed to get a message", err)
 			return
@@ -242,7 +215,72 @@ func showMsgHandler(store *storage.MessageStore) http.HandlerFunc {
 			send404(w)
 			return
 		}
-		tmpl.ExecuteTemplate(w, "message.show.tmpl", msg)
+		tmpl.ExecuteTemplate(w, "message.show.tmpl", map[string]interface{}{
+			"message":     msg,
+			SESS_CSRF_KEY: sess.Values[SESS_CSRF_KEY],
+		})
+	}
+}
+
+func showMsgFullHandler(sessions *sessions.CookieStore, store *storage.MessageStore) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		id := r.PathValue("id")
+		err := r.ParseForm()
+		if err != nil {
+			sendError(w, "failed to read request body parameters", err)
+			return
+		}
+		sess, _ := sessions.Get(r, SESS_CSRF_NAME)
+		csrf := r.PostForm.Get("_csrf")
+		if csrf == "" || csrf != sess.Values[SESS_CSRF_KEY] {
+			sendError(w, "invalid token", nil)
+			return
+		}
+		pin := r.PostForm.Get("pin")
+		if pin == "" {
+			sendError(w, "pin is empty", nil)
+			return
+		}
+		msg, err := store.GetFullMessage(id, pin)
+		if err != nil {
+			sendError(w, "failed to get a message", err)
+			return
+		}
+		if msg == nil {
+			send404(w)
+			return
+		}
+		tmpl.ExecuteTemplate(w, "message.show.tmpl", map[string]interface{}{
+			"message": msg,
+		})
+	}
+}
+
+// adds CSRF token to the session of the get requests
+func newAppMiddleware(sessions *sessions.CookieStore, users *storage.UserStore) func(h http.Handler) http.Handler {
+	return func(h http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+
+			sess, _ := sessions.Get(r, SESS_CSRF_NAME)
+
+			if r.Method == "GET" {
+				// setup CSRF token for pages
+				t, err := storage.MakeToken()
+				if err != nil {
+					sendError(w, "failed to setup csrf", err)
+					return
+				}
+				sess.Values[SESS_CSRF_KEY] = t
+			}
+
+			err := sess.Save(r, w)
+			if err != nil {
+				sendError(w, "failed to save session", err)
+				return
+			}
+
+			h.ServeHTTP(w, r)
+		})
 	}
 }
 
