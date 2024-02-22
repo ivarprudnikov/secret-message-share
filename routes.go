@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"embed"
+	"fmt"
 	"html/template"
 
 	"errors"
@@ -12,11 +13,6 @@ import (
 	"github.com/gorilla/sessions"
 	"github.com/ivarprudnikov/secretshare/internal/storage"
 )
-
-//go:embed web
-var templatesFs embed.FS
-
-var tmpl *template.Template
 
 const MAX_FORM_SIZE = int64(3 << 20) // 3 MB
 const SESS_COOKIE = "_i_remember"
@@ -28,6 +24,13 @@ type contextKey int
 
 // userKey is the key used to store the user in the context.
 const userKey contextKey = 50
+
+// templates get embedded in the binary
+//
+//go:embed web
+var templatesFs embed.FS
+
+var tmpl *template.Template
 
 func init() {
 	tmpl = template.Must(template.ParseFS(templatesFs, "web/*.tmpl"))
@@ -306,7 +309,7 @@ func hasAuth(h http.Handler) http.Handler {
 		var ctx = r.Context()
 		user := ctx.Value(userKey)
 		if user == nil {
-			http.NotFound(w, r)
+			http.Redirect(w, r, fmt.Sprintf("/accounts/login?uri=%s", r.URL.Path), http.StatusSeeOther)
 			return
 		}
 		h.ServeHTTP(w, r)
