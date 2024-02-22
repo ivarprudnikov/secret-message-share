@@ -24,7 +24,19 @@ func (u *UserStore) AddUser(username string, password string) (User, error) {
 	return usr, nil
 }
 
-func (u *UserStore) GetUser(username string, password string) (*User, error) {
+func (u *UserStore) GetUser(username string) (*User, error) {
+	if v, ok := u.users.Load(username); ok {
+		if usr, ok := v.(User); ok {
+			return &User{
+				Username: usr.Username,
+				Created:  usr.Created,
+			}, nil
+		}
+	}
+	return nil, nil
+}
+
+func (u *UserStore) GetUserWithPass(username string, password string) (*User, error) {
 	if v, ok := u.users.Load(username); ok {
 		if usr, ok := v.(User); ok {
 			// TODO use salted hash

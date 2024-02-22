@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"embed"
 	"html/template"
 
@@ -18,10 +19,15 @@ var templatesFs embed.FS
 var tmpl *template.Template
 
 const MAX_FORM_SIZE = int64(3 << 20) // 3 MB
-const SESS_CSRF_NAME = "session.csrf"
+const SESS_COOKIE = "_i_remember"
 const SESS_CSRF_KEY = "csrf"
+const SESS_USER_KEY = "user"
 
-const SESS_USER = "user"
+// contextKey is the type used to store the user in the context.
+type contextKey int
+
+// userKey is the key used to store the user in the context.
+const userKey contextKey = 50
 
 func init() {
 	tmpl = template.Must(template.ParseFS(templatesFs, "web/*.tmpl"))
@@ -38,9 +44,9 @@ func AddRoutes(
 	mux.Handle("POST /accounts/login", preReq(loginAccountHandler(sessions, users)))
 	mux.Handle("GET /accounts/new", preReq(createAccountPageHandler(sessions)))
 	mux.Handle("POST /accounts", preReq(createAccountHandler(sessions, users)))
-	mux.Handle("GET /messages", preReq(listMsgHandler(messages)))
-	mux.Handle("POST /messages", preReq(createMsgHandler(sessions, messages)))
-	mux.Handle("GET /messages/new", preReq(createMsgPageHandler(sessions)))
+	mux.Handle("GET /messages", preReq(hasAuth(listMsgHandler(messages))))
+	mux.Handle("POST /messages", preReq(hasAuth(createMsgHandler(sessions, messages))))
+	mux.Handle("GET /messages/new", preReq(hasAuth(createMsgPageHandler(sessions))))
 	mux.Handle("GET /messages/{id}", preReq(showMsgHandler(sessions, messages)))
 	mux.Handle("POST /messages/{id}", preReq(showMsgFullHandler(sessions, messages)))
 	mux.HandleFunc("GET /", indexHandler)
@@ -61,7 +67,7 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 
 func loginPageHandler(sessions *sessions.CookieStore) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		sess, _ := sessions.Get(r, SESS_CSRF_NAME)
+		sess, _ := sessions.Get(r, SESS_COOKIE)
 		tmpl.ExecuteTemplate(w, "account.login.tmpl", sess.Values)
 	}
 }
@@ -73,7 +79,7 @@ func loginAccountHandler(sessions *sessions.CookieStore, store *storage.UserStor
 			sendError(w, "failed to read request body parameters", err)
 			return
 		}
-		sess, _ := sessions.Get(r, SESS_CSRF_NAME)
+		sess, _ := sessions.Get(r, SESS_COOKIE)
 		csrf := r.PostForm.Get("_csrf")
 		if csrf == "" || csrf != sess.Values[SESS_CSRF_KEY] {
 			sendError(w, "invalid token", nil)
@@ -89,7 +95,7 @@ func loginAccountHandler(sessions *sessions.CookieStore, store *storage.UserStor
 			sendError(w, "password is empty", nil)
 			return
 		}
-		usr, err := store.GetUser(username, password)
+		usr, err := store.GetUserWithPass(username, password)
 		if err != nil {
 			sendError(w, "failed to login", err)
 			return
@@ -98,7 +104,7 @@ func loginAccountHandler(sessions *sessions.CookieStore, store *storage.UserStor
 			w.WriteHeader(http.StatusUnauthorized)
 			return
 		}
-		sess.Values[SESS_USER] = username
+		sess.Values[SESS_USER_KEY] = username
 		err = sess.Save(r, w)
 		if err != nil {
 			sendError(w, "failed to save session", err)
@@ -110,7 +116,7 @@ func loginAccountHandler(sessions *sessions.CookieStore, store *storage.UserStor
 
 func createAccountPageHandler(sessions *sessions.CookieStore) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		sess, _ := sessions.Get(r, SESS_CSRF_NAME)
+		sess, _ := sessions.Get(r, SESS_COOKIE)
 		tmpl.ExecuteTemplate(w, "account.create.tmpl", sess.Values)
 	}
 }
@@ -122,7 +128,7 @@ func createAccountHandler(sessions *sessions.CookieStore, store *storage.UserSto
 			sendError(w, "failed to read request body parameters", err)
 			return
 		}
-		sess, _ := sessions.Get(r, SESS_CSRF_NAME)
+		sess, _ := sessions.Get(r, SESS_COOKIE)
 		csrf := r.PostForm.Get("_csrf")
 		if csrf == "" || csrf != sess.Values[SESS_CSRF_KEY] {
 			sendError(w, "invalid token", nil)
@@ -169,7 +175,7 @@ func listMsgHandler(store *storage.MessageStore) http.HandlerFunc {
 
 func createMsgPageHandler(sessions *sessions.CookieStore) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		sess, _ := sessions.Get(r, SESS_CSRF_NAME)
+		sess, _ := sessions.Get(r, SESS_COOKIE)
 		tmpl.ExecuteTemplate(w, "message.create.tmpl", sess.Values)
 	}
 }
@@ -181,7 +187,7 @@ func createMsgHandler(sessions *sessions.CookieStore, store *storage.MessageStor
 			sendError(w, "failed to read request body parameters", err)
 			return
 		}
-		sess, _ := sessions.Get(r, SESS_CSRF_NAME)
+		sess, _ := sessions.Get(r, SESS_COOKIE)
 		csrf := r.PostForm.Get("_csrf")
 		if csrf == "" || csrf != sess.Values[SESS_CSRF_KEY] {
 			sendError(w, "invalid token", nil)
@@ -206,7 +212,7 @@ func showMsgHandler(sessions *sessions.CookieStore, store *storage.MessageStore)
 	return func(w http.ResponseWriter, r *http.Request) {
 		id := r.PathValue("id")
 		msg, err := store.GetMessage(id)
-		sess, _ := sessions.Get(r, SESS_CSRF_NAME)
+		sess, _ := sessions.Get(r, SESS_COOKIE)
 		if err != nil {
 			sendError(w, "failed to get a message", err)
 			return
@@ -230,7 +236,7 @@ func showMsgFullHandler(sessions *sessions.CookieStore, store *storage.MessageSt
 			sendError(w, "failed to read request body parameters", err)
 			return
 		}
-		sess, _ := sessions.Get(r, SESS_CSRF_NAME)
+		sess, _ := sessions.Get(r, SESS_COOKIE)
 		csrf := r.PostForm.Get("_csrf")
 		if csrf == "" || csrf != sess.Values[SESS_CSRF_KEY] {
 			sendError(w, "invalid token", nil)
@@ -261,7 +267,7 @@ func newAppMiddleware(sessions *sessions.CookieStore, users *storage.UserStore) 
 	return func(h http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
-			sess, _ := sessions.Get(r, SESS_CSRF_NAME)
+			sess, _ := sessions.Get(r, SESS_COOKIE)
 
 			if r.Method == "GET" {
 				// setup CSRF token for pages
@@ -273,6 +279,17 @@ func newAppMiddleware(sessions *sessions.CookieStore, users *storage.UserStore) 
 				sess.Values[SESS_CSRF_KEY] = t
 			}
 
+			// check if user is set, if yes then add it to context
+			_username := sess.Values[SESS_USER_KEY]
+			if username, ok := _username.(string); ok {
+				user, err := users.GetUser(username)
+				if err != nil || user == nil {
+					sess.Values[SESS_USER_KEY] = nil
+				}
+				var ctx = r.Context()
+				*r = *r.WithContext(context.WithValue(ctx, userKey, user))
+			}
+
 			err := sess.Save(r, w)
 			if err != nil {
 				sendError(w, "failed to save session", err)
@@ -282,6 +299,18 @@ func newAppMiddleware(sessions *sessions.CookieStore, users *storage.UserStore) 
 			h.ServeHTTP(w, r)
 		})
 	}
+}
+
+func hasAuth(h http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var ctx = r.Context()
+		user := ctx.Value(userKey)
+		if user == nil {
+			http.NotFound(w, r)
+			return
+		}
+		h.ServeHTTP(w, r)
+	})
 }
 
 type ApiError struct {
