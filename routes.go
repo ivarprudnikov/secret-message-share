@@ -32,12 +32,17 @@ func AddRoutes(
 	messages *storage.MessageStore,
 	users *storage.UserStore,
 ) {
-	mux.HandleFunc("/account/login", loginAccountHandler(sessions, users))
-	mux.HandleFunc("/account/create", createAccountHandler(users))
-	mux.HandleFunc("/message/list", listMsgHandler(messages))
-	mux.HandleFunc("/message/create", createMsgHandler(messages))
-	mux.Handle("/message/show/", http.StripPrefix("/message/show/", showMsgHandler(messages)))
-	mux.HandleFunc("/", indexHandler)
+	mux.HandleFunc("GET /accounts/login", loginAccountHandler(sessions, users))
+	mux.HandleFunc("POST /accounts/login", loginAccountHandler(sessions, users))
+	mux.HandleFunc("GET /accounts/new", createAccountHandler(users))
+	mux.HandleFunc("POST /accounts", createAccountHandler(users))
+
+	mux.HandleFunc("GET /messages", listMsgHandler(messages))
+	mux.HandleFunc("POST /messages", createMsgHandler(messages))
+	mux.HandleFunc("GET /messages/new", createMsgHandler(messages))
+	mux.Handle("GET /messages/{id}", showMsgHandler(messages))
+	mux.Handle("POST /messages/{id}", showMsgHandler(messages))
+	mux.HandleFunc("GET /", indexHandler)
 }
 
 // indexHandler returns the main index page
@@ -203,7 +208,7 @@ func createMsgHandler(store *storage.MessageStore) http.HandlerFunc {
 
 func showMsgHandler(store *storage.MessageStore) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		id := r.URL.Path
+		id := r.PathValue("id")
 		var msg *storage.Message
 		var err error
 		if r.Method == "POST" {

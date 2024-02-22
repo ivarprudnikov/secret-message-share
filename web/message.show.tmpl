@@ -12,7 +12,7 @@
     {{if .Pin}}
       <p>PIN: {{.Pin}}</p>
     {{else}}
-      <form id="show" class="my-4" name="show" action="/message/show/{{ .Digest }}" method="POST">
+      <form id="show" class="my-4" name="show" action="/messages/{{ .Digest }}" method="POST">
         <div class="mb-3">
           <label for="pin" class="form-label">PIN</label>
           <input type="password" name="pin" class="form-control" aria-describedby="pinHelp" id="pin" placeholder="secret PIN" />
