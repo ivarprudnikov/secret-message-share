@@ -23,20 +23,20 @@ func (s *MessageStore) Encrypt(text string, pass string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	cyphertext, err := EncryptAES(key, text)
+	ciphertext, err := EncryptAES(key, text)
 	if err != nil {
 		return "", err
 	}
-	return cyphertext, nil
+	return ciphertext, nil
 }
 
-func (s *MessageStore) Decrypt(cyphertext string, pass string) (string, error) {
+func (s *MessageStore) Decrypt(ciphertext string, pass string) (string, error) {
 	// derive a key from the pass
 	key, err := StrongKey(pass, s.salt)
 	if err != nil {
 		return "", err
 	}
-	plaintext, err := DecryptAES(key, cyphertext)
+	plaintext, err := DecryptAES(key, ciphertext)
 	if err != nil {
 		return "", err
 	}
@@ -65,8 +65,8 @@ func (s *MessageStore) AddMessage(text string, username string) (Message, error)
 	if err != nil {
 		return Message{}, err
 	}
-	cyphertext, err := s.Encrypt(text, pin)
-	msg := NewMessage(username, cyphertext, pin)
+	ciphertext, err := s.Encrypt(text, pin)
+	msg := NewMessage(username, ciphertext, pin)
 	if err != nil {
 		return Message{}, err
 	}
@@ -115,12 +115,12 @@ func (s *MessageStore) GetFullMessage(id string, pin string) (*Message, error) {
 				}, nil
 			}
 
+			msg.Attempt += 1
+			s.messages.Store(id, msg)
+
 			// If the pin was wrong then start tracking attempts
-			if msg.Attempt > MAX_PIN_ATTEMPTS {
+			if msg.Attempt >= MAX_PIN_ATTEMPTS {
 				s.messages.Delete(id)
-			} else {
-				msg.Attempt += 1
-				s.messages.Store(id, msg)
 			}
 		} else {
 			// do not keep broken messages

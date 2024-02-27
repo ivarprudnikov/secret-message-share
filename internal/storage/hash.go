@@ -2,6 +2,7 @@ package storage
 
 import (
 	"crypto/aes"
+	"crypto/cipher"
 	"crypto/rand"
 	"crypto/sha256"
 	"encoding/base64"
@@ -12,6 +13,8 @@ import (
 
 	"golang.org/x/crypto/hkdf"
 )
+
+const keySizeBytes = 16 // 128-bit key
 
 // simple text hashing
 func HashText(text string) string {
@@ -38,6 +41,7 @@ func MakeToken() (string, error) {
 }
 
 // use hkdf to derive a strong key (RFC5869)
+// maybe switch to bcrypt or scrypt
 func StrongKey(passText string, saltText string) ([]byte, error) {
 	hashFn := sha256.New
 	hashSize := hashFn().Size()
@@ -47,7 +51,7 @@ func StrongKey(passText string, saltText string) ([]byte, error) {
 	}
 	saltBytes := []byte(saltText)
 	hkdf := hkdf.New(hashFn, passBytes, saltBytes, nil)
-	key := make([]byte, 16) // 128-bit key
+	key := make([]byte, keySizeBytes)
 	if _, err := io.ReadFull(hkdf, key); err != nil {
 		return nil, err
 	}
@@ -56,23 +60,51 @@ func StrongKey(passText string, saltText string) ([]byte, error) {
 
 // use strong key to encrypt text
 func EncryptAES(key []byte, plaintext string) (string, error) {
-	c, err := aes.NewCipher(key)
+	cipherBlock, err := aes.NewCipher(key)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("failed to create cipher: %w", err)
 	}
-	out := make([]byte, len(plaintext))
-	// FIXME pad the text to reach minimum block size
-	c.Encrypt(out, []byte(plaintext))
-	return hex.EncodeToString(out), nil
+
+	gcm, err := cipher.NewGCM(cipherBlock)
+	if err != nil {
+		return "", fmt.Errorf("failed to wrap cipher: %w", err)
+	}
+
+	// Never use more than 2^32 random nonces with a given key because of the risk of a repeat.
+	nonce := make([]byte, gcm.NonceSize())
+	if _, err := io.ReadFull(rand.Reader, nonce); err != nil {
+		return "", fmt.Errorf("failed create nonce: %w", err)
+	}
+
+	// ciphertext here is actually nonce+ciphertext
+	// So that when we decrypt, just knowing the nonce size
+	// is enough to separate it from the ciphertext.
+	ciphertext := gcm.Seal(nonce, nonce, []byte(plaintext), nil)
+
+	return hex.EncodeToString(ciphertext), nil
 }
 
 func DecryptAES(key []byte, ct string) (string, error) {
 	ciphertext, _ := hex.DecodeString(ct)
-	c, err := aes.NewCipher(key)
+	cipherBlock, err := aes.NewCipher(key)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("failed to create cipher: %w", err)
 	}
-	pt := make([]byte, len(ciphertext))
-	c.Decrypt(pt, ciphertext)
-	return string(pt[:]), nil
+
+	gcm, err := cipher.NewGCM(cipherBlock)
+	if err != nil {
+		return "", fmt.Errorf("failed to wrap cipher: %w", err)
+	}
+
+	// Since we know the ciphertext is actually nonce+ciphertext
+	// And len(nonce) == NonceSize(). We can separate the two.
+	nonceSize := gcm.NonceSize()
+	nonce, ciphertext := ciphertext[:nonceSize], ciphertext[nonceSize:]
+
+	plaintext, err := gcm.Open(nil, []byte(nonce), []byte(ciphertext), nil)
+	if err != nil {
+		return "", fmt.Errorf("failed to decrypt: %w", err)
+	}
+
+	return string(plaintext), nil
 }
