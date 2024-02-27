@@ -26,8 +26,8 @@ func main() {
 	users := storage.NewUserStore(salt)
 	handler := NewHttpHandler(sessions, messages, users)
 	port := getPort()
-	listenAddr := ":" + port
-	log.Printf("About to listen on %s. Go to http://127.0.0.1%s/", listenAddr, listenAddr)
+	listenAddr := "127.0.0.1:" + port
+	log.Printf("About to listen on %s. Go to http://%s/", port, listenAddr)
 	log.Fatal(http.ListenAndServe(listenAddr, handler))
 }
 
