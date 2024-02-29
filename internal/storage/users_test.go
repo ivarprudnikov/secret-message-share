@@ -8,7 +8,7 @@ import (
 
 func TestUserStore_GetUserWithPass(t *testing.T) {
 	// Create a new UserStore instance
-	store := storage.NewUserStore("123")
+	store := storage.NewUserStore("123", storage.NewLocalClient())
 
 	// Create a test user
 	username := "testuser"

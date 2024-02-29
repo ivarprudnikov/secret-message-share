@@ -23,7 +23,11 @@ func NewHttpHandler(sessions *sessions.CookieStore, messages *storage.MessageSto
 func main() {
 	sessions := sessions.NewCookieStore([]byte(sessionkey))
 	messages := storage.NewMessageStore(salt)
-	users := storage.NewUserStore(salt)
+	userStorage, err := storage.NewTableClient("secretsharenortheurope", "secretusers")
+	if err != nil {
+		panic(err)
+	}
+	users := storage.NewUserStore(salt, userStorage)
 	handler := NewHttpHandler(sessions, messages, users)
 	port := getPort()
 	listenAddr := "127.0.0.1:" + port
