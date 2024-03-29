@@ -65,6 +65,8 @@ Note: The TLS certificate is not used when testing the application locally.
 
 The availability of the service connection is ensured by the public cloud provider. The Azure Function App service is highly scalable. At the moment the application is deployed in the datacenters in the North Europe region. The cloud provider guarantees the access to the service according to the service level agreement (SLA) which mentions 99.95% guarantee. The remaining access failures are handled on the client side and use a retry policy or inform the user about the temporary unavailability of the service.
 
+The access to the host where the server is running is restricted and all of the ports are closed except one for the web traffic.
+
 To detect the unauthorized access to the application the server logs are used. The logs are stored in the Azure Log Analytics workspace. It is the duty of the administrators to monitor the logs and take action in case of the unauthorized access to the application. The logs are stored for an extended amount of time to allow the investigation of the security incidents.
 
 In case of the breach the restoration of the service will either be done by the cloud provider or the administrator who has the access. The administrator can quickly apply additional network configuration changes to block the unauthorized access to the application.
@@ -79,7 +81,7 @@ There are a couple of main threats we are trying to mitigate against:
 
 The application server serves the HTML pages to the browser for the user to be able to easily navigate the features provided. There is no client side javascript being used.
 
-The sensitive information that user submits to the server is protected with the use of the HTTPS encryption and the trusted browser security features such as sandboxing. In addition, cross site request forgery (CSRF) tokens are used in the HTML forms to prevent the on-click session attacks.
+The sensitive information that user submits to the server is protected with the use of the HTTPS encryption and the trusted browser security features such as sandboxing. In addition, cross site request forgery (CSRF) tokens are used in the HTML forms to prevent the one-click session attacks.
 
 For the user to be able to maintain a session after they authenticate, the secure cookies are used in the browser. The cookies are created and set by the server and they use hash-based message authentication code (HMAC) to protect the integrity of the session information. The key used to validate the HMAC is known only to the server.
 
@@ -105,23 +107,31 @@ The compiled server binary, nor the open source code does not contain any sensit
 
 To mitigate against the denial of service (DOS) attacks it is planned to use the rate limiting on the server side. The rate limiting will be based on the IP address of the client and the number of requests per time period. Furthermore, the application is hosted in the highly scalable cloud environment which can handle the increased load by scaling the resources automatically.
 
-Access to the server which is hosting the compiled server binary is restricted to the authorized users only. The server is hosted in the Azure cloud environment and the access to the server is controlled by the Azure Active Directory (AAD) and the role based access control (RBAC) policies.
+Access to the server which is hosting the compiled server binary is restricted to the authorized users only. The server is hosted in the Azure cloud environment and the access to the server is controlled by the Microsoft Entra ID and the role based access control (RBAC) policies.
 
 Source code is stored in the GitHub account which is protected by the two factor authentication (2FA). Any changes to the source code are reviewed by the owner of the repository before they are merged to the main branch. The continuous integration (CI) pipeline is used to build and test the code before it is deployed to the cloud environment. The deployment of code can only be done by the authorized users who have the access to the Azure cloud environment.
 
+Any secret material used in the application is provided through the environment variables.
+
+To monitor the application the extensive use of the logs is planned. The logs are stored in the Azure Log Analytics workspace. As mentioned in the network security serction the logs will be kept for a long time to allow the investigation of the security incidents.
+
+In the case of the breach the server can quickly be restored to the previous state by redeploying the server binary from the source code repository. The server is stateless and the data is stored in the Azure Table Storage. The data is encrypted at rest and the keys are known only to the server and the administrators. The security keys can be rotated without the need to redeploy the server binary.
+
 ### Storage security
 
-The data at rest is planned to be stored in the Azure Table Storage. Azure Storage encrypts the data at rest with AES 256-bit encryption. In addition to that all of the sensitive data is hashed or encrypted before being stored in the Table Storage with the encryption keys known to the server and administarators only.
+The biggest threat to the application is the unauthorized access to the stored data and its exfiltration.
+
+The data at rest is planned to be stored in the Azure Table Storage. Azure Storage encrypts the data at rest with AES 256-bit encryption with the Azure managed keys. In addition to that all of the sensitive data is hashed or encrypted before being stored in the Table Storage with the encryption keys known to the server and administarators only.
 
 In the case of the breach the data is hashed and will soon use the salt to prevent the rainbow table attacks.
 
-### Auditing
+Access monitoring and auditing is provided by the Azure Storage. The administrators can monitor the access to the data and take action in case of the unauthorized access.
 
-### Needs further improvement
+## Needs further improvement
 
 - Hashing needs to use salt to prevent rainbow table attacks
-- Secure key material need to be passed through environment variables
+- Secure key material need to be passed through the environment variables
 - Encrypt the session cookie contents in addition to the HMAC
-- Increase the size of keys
+- Increase the size of the keys
 - Add rate limiting
-- Add monitoring and alerting
+- Add logging
