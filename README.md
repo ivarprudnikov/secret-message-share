@@ -119,13 +119,17 @@ In the case of the breach the server can quickly be restored to the previous sta
 
 ### Storage security
 
-The biggest threat to the application is the unauthorized access to the stored data and its exfiltration.
+One of the biggest threats to the application is the unauthorized access to the stored data and its exfiltration.
 
 The data at rest is planned to be stored in the Azure Table Storage. Azure Storage encrypts the data at rest with AES 256-bit encryption with the Azure managed keys. In addition to that all of the sensitive data is hashed or encrypted before being stored in the Table Storage with the encryption keys known to the server and administarators only.
 
 In the case of the breach the data is hashed and will soon use the salt to prevent the rainbow table attacks.
 
+Additional protection is in place where the attacker tries to guess the PIN to access the message. The message will be deleted after the number of failed attempts exceeds the threshold.
+
 Access monitoring and auditing is provided by the Azure Storage. The administrators can monitor the access to the data and take action in case of the unauthorized access.
+
+In a case of loss or corruption of the data it will be able to restore it from the backups by the server administrators.
 
 ## Needs further improvement
 
@@ -135,3 +139,5 @@ Access monitoring and auditing is provided by the Azure Storage. The administrat
 - Increase the size of the keys
 - Add rate limiting
 - Add logging
+- Implement Azure Table Storage
+- Add backups
