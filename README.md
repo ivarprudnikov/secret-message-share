@@ -40,7 +40,29 @@ sequenceDiagram
 - Compile and deploy to Azure: `./scripts/azure.fn.deploy.sh`
 - Create required Azure infrastructure: `./scripts/azure.infra.create.sh`
 
-## Storage models
+## Architecture
+
+The server application is written in Go and uses the Azure Functions to serve the HTTP requests. The server is stateless and the data is going to be stored in the Azure Table Storage. The data is encrypted at rest and the keys are known only to the server and the administrators.
+
+```mermaid
+flowchart TD
+    User[User client] --> |Uses TLS| LB
+    Admin[Admin client] --> |Updates| Cfg
+    Admin --> |Deploys| FN
+    subgraph az [Azure Cloud]
+    Table[(Az Tables)]
+    Log[(Az Log analytics)]
+    Cfg(Az Env Config)
+    FN[Server instances]
+    LB[Az load balancer]
+    end
+    FN --- |Read,Write| Table
+    FN --> |Collect| Log
+    Cfg --> |Provide values| FN
+    LB --> |Forward| FN
+```
+
+### Storage models
 
 There are only two things that are stored in the database: users and messages. The user is the one who creates the message and the message is the content that is shared with the anonymous users online.
 
@@ -51,11 +73,11 @@ There are only two things that are stored in the database: users and messages. T
 Message { username pin=hash(pin) content=encrypt(text,pin) digest=hash(content) attempt created_at }
 ```
 
-## Security model
+## Security
 
 The application employs multiple layers of security to protect the data. Furthermore the security model aims at ensuring the CIA triad: confidentiality, integrity and availability.
 
-The development aims to follow the guidelines provided by the Open Web Application Security Project (OWASP) and the National Institute of Standards and Technology (NIST) to ensure the security of the application.
+The development aims to follow the guidelines provided by the National Institute of Standards and Technology (NIST) [1] to ensure the security of the application.
 
 ### Network security
 
@@ -131,6 +153,14 @@ Access monitoring and auditing is provided by the Azure Storage. The administrat
 
 In a case of loss or corruption of the data it will be able to restore it from the backups by the server administrators.
 
+### Source code
+
+The source code is stored in the GitHub repository. The repository is protected by the two factor authentication (2FA). The access to the repository is controlled by the owner of the repository.
+
+The continuous integration (CI) pipeline is used to build and test the code before it is deployed to the cloud environment. The deployment of code can only be done by the authorized users who have the access to the Azure cloud environment.
+
+The GiHub repository subscribes to security notifications and the owner of the repository is notified in case of the security vulnerability in the third party libraries used in the application.
+
 ## Needs further improvement
 
 - Hashing needs to use salt to prevent rainbow table attacks
@@ -141,3 +171,7 @@ In a case of loss or corruption of the data it will be able to restore it from t
 - Add logging
 - Implement Azure Table Storage
 - Add backups
+
+## References
+
+[1] The NIST Cybersecurity Framework (CSF) 2.0 https://doi.org/10.6028/NIST.CSWP.29
