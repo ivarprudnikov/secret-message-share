@@ -11,7 +11,8 @@ import (
 )
 
 const salt = "12345678123456781234567812345678"
-const sessionkey = "12345678123456781234567812345678"
+const sessionAuthKey = "12345678123456781234567812345678"
+const sessionEncKey = "12345678123456781234567812345678"
 
 func NewHttpHandler(sessions *sessions.CookieStore, messages storage.MessageStore, users storage.UserStore) http.Handler {
 	mux := http.NewServeMux()
@@ -21,7 +22,7 @@ func NewHttpHandler(sessions *sessions.CookieStore, messages storage.MessageStor
 
 // main starts the server
 func main() {
-	sessions := sessions.NewCookieStore([]byte(sessionkey))
+	sessions := sessions.NewCookieStore([]byte(sessionAuthKey), []byte(sessionEncKey))
 	messages := storage.NewMemMessageStore(salt)
 	users := storage.NewMemUserStore(salt)
 	handler := NewHttpHandler(sessions, messages, users)
