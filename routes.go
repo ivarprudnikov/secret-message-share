@@ -39,7 +39,7 @@ func init() {
 func AddRoutes(
 	mux *http.ServeMux,
 	sessions *sessions.CookieStore,
-	messages *storage.MessageStore,
+	messages storage.MessageStore,
 	users *storage.UserStore,
 ) {
 	preReq := newAppMiddleware(sessions, users)
@@ -161,7 +161,7 @@ func createAccountHandler(sessions *sessions.CookieStore, store *storage.UserSto
 	}
 }
 
-func listMsgHandler(store *storage.MessageStore) http.HandlerFunc {
+func listMsgHandler(store storage.MessageStore) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != "GET" {
 			w.WriteHeader(http.StatusMethodNotAllowed)
@@ -183,7 +183,7 @@ func createMsgPageHandler(sessions *sessions.CookieStore) http.HandlerFunc {
 	}
 }
 
-func createMsgHandler(sessions *sessions.CookieStore, store *storage.MessageStore) http.HandlerFunc {
+func createMsgHandler(sessions *sessions.CookieStore, store storage.MessageStore) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		err := r.ParseMultipartForm(MAX_FORM_SIZE)
 		if err != nil {
@@ -211,7 +211,7 @@ func createMsgHandler(sessions *sessions.CookieStore, store *storage.MessageStor
 	}
 }
 
-func showMsgHandler(sessions *sessions.CookieStore, store *storage.MessageStore) http.HandlerFunc {
+func showMsgHandler(sessions *sessions.CookieStore, store storage.MessageStore) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		id := r.PathValue("id")
 		msg, err := store.GetMessage(id)
@@ -231,7 +231,7 @@ func showMsgHandler(sessions *sessions.CookieStore, store *storage.MessageStore)
 	}
 }
 
-func showMsgFullHandler(sessions *sessions.CookieStore, store *storage.MessageStore) http.HandlerFunc {
+func showMsgFullHandler(sessions *sessions.CookieStore, store storage.MessageStore) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		id := r.PathValue("id")
 		err := r.ParseForm()

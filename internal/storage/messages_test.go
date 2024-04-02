@@ -8,7 +8,7 @@ import (
 
 func TestMessageStore_GetMessage(t *testing.T) {
 	// Create a new MessageStore instance
-	store := storage.NewMessageStore("12345678123456781234567812345678")
+	store := storage.NewMemMessageStore("12345678123456781234567812345678")
 
 	// Create a test message
 	content := "testcontent testcontent testcontent testcontent testcontent testcontent"
@@ -44,7 +44,7 @@ func TestMessageStore_GetMessage(t *testing.T) {
 
 func TestMessageStore_GetFullMessage(t *testing.T) {
 	// Create a new MessageStore instance
-	store := storage.NewMessageStore("12345678123456781234567812345678")
+	store := storage.NewMemMessageStore("12345678123456781234567812345678")
 
 	// Create a test message
 	content := "testcontent testcontent testcontent testcontent testcontent testcontent"
@@ -86,7 +86,7 @@ func TestMessageStore_GetFullMessage(t *testing.T) {
 
 func TestMessageStore_DeletedAfterFailedAttempts(t *testing.T) {
 	// Create a new MessageStore instance
-	store := storage.NewMessageStore("12345678123456781234567812345678")
+	store := storage.NewMemMessageStore("12345678123456781234567812345678")
 
 	// Create a test message
 	content := "testcontent testcontent testcontent testcontent testcontent testcontent"
@@ -114,7 +114,7 @@ func TestMessageStore_DeletedAfterFailedAttempts(t *testing.T) {
 
 func TestMessageStore_EncryptDecrypt(t *testing.T) {
 	// Create a new MessageStore instance
-	store := storage.NewMessageStore("12345678123456781234567812345678")
+	store := storage.NewMemMessageStore("12345678123456781234567812345678")
 
 	message := "abc"
 	key := "pass"

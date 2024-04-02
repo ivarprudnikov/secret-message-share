@@ -8,16 +8,25 @@ import (
 
 const MAX_PIN_ATTEMPTS = 5
 
-type MessageStore struct {
+type MessageStore interface {
+	ListMessages() ([]Message, error)
+	AddMessage(text string, username string) (Message, error)
+	GetMessage(id string) (*Message, error)
+	GetFullMessage(id string, pin string) (*Message, error)
+	Encrypt(text string, pass string) (string, error)
+	Decrypt(ciphertext string, pass string) (string, error)
+}
+
+type memMessageStore struct {
 	messages sync.Map
 	salt     string
 }
 
-func NewMessageStore(salt string) *MessageStore {
-	return &MessageStore{messages: sync.Map{}, salt: salt}
+func NewMemMessageStore(salt string) MessageStore {
+	return &memMessageStore{messages: sync.Map{}, salt: salt}
 }
 
-func (s *MessageStore) Encrypt(text string, pass string) (string, error) {
+func (s *memMessageStore) Encrypt(text string, pass string) (string, error) {
 	// derive a key from the pass
 	key, err := StrongKey(pass, s.salt)
 	if err != nil {
@@ -30,7 +39,7 @@ func (s *MessageStore) Encrypt(text string, pass string) (string, error) {
 	return ciphertext, nil
 }
 
-func (s *MessageStore) Decrypt(ciphertext string, pass string) (string, error) {
+func (s *memMessageStore) Decrypt(ciphertext string, pass string) (string, error) {
 	// derive a key from the pass
 	key, err := StrongKey(pass, s.salt)
 	if err != nil {
@@ -43,7 +52,7 @@ func (s *MessageStore) Decrypt(ciphertext string, pass string) (string, error) {
 	return plaintext, nil
 }
 
-func (s *MessageStore) ListMessages() ([]Message, error) {
+func (s *memMessageStore) ListMessages() ([]Message, error) {
 	var msgs []Message
 	s.messages.Range(func(k, v any) bool {
 		if msg, ok := v.(Message); ok {
@@ -59,7 +68,7 @@ func (s *MessageStore) ListMessages() ([]Message, error) {
 }
 
 // TODO: allow to reset the pin for the owner
-func (s *MessageStore) AddMessage(text string, username string) (Message, error) {
+func (s *memMessageStore) AddMessage(text string, username string) (Message, error) {
 	// an easy to enter pin
 	pin, err := MakePin()
 	if err != nil {
@@ -77,7 +86,7 @@ func (s *MessageStore) AddMessage(text string, username string) (Message, error)
 	return msg, nil
 }
 
-func (s *MessageStore) GetMessage(id string) (*Message, error) {
+func (s *memMessageStore) GetMessage(id string) (*Message, error) {
 	if v, ok := s.messages.Load(id); ok {
 		if msg, ok := v.(Message); ok {
 			return &Message{
@@ -91,7 +100,7 @@ func (s *MessageStore) GetMessage(id string) (*Message, error) {
 	return nil, nil
 }
 
-func (s *MessageStore) GetFullMessage(id string, pin string) (*Message, error) {
+func (s *memMessageStore) GetFullMessage(id string, pin string) (*Message, error) {
 	if v, ok := s.messages.Load(id); ok {
 		if msg, ok := v.(Message); ok {
 			// TODO use salted hash
