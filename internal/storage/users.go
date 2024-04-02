@@ -6,16 +6,22 @@ import (
 	"time"
 )
 
-type UserStore struct {
+type UserStore interface {
+	AddUser(username string, password string) (User, error)
+	GetUser(username string) (*User, error)
+	GetUserWithPass(username string, password string) (*User, error)
+}
+
+type memUserStore struct {
 	users sync.Map
 	salt  string
 }
 
-func NewUserStore(salt string) *UserStore {
-	return &UserStore{users: sync.Map{}, salt: salt}
+func NewMemUserStore(salt string) UserStore {
+	return &memUserStore{users: sync.Map{}, salt: salt}
 }
 
-func (u *UserStore) AddUser(username string, password string) (User, error) {
+func (u *memUserStore) AddUser(username string, password string) (User, error) {
 	if _, ok := u.users.Load(username); ok {
 		return User{}, errors.New("username is not available")
 	}
@@ -24,7 +30,7 @@ func (u *UserStore) AddUser(username string, password string) (User, error) {
 	return usr, nil
 }
 
-func (u *UserStore) GetUser(username string) (*User, error) {
+func (u *memUserStore) GetUser(username string) (*User, error) {
 	if v, ok := u.users.Load(username); ok {
 		if usr, ok := v.(User); ok {
 			return &User{
@@ -36,7 +42,7 @@ func (u *UserStore) GetUser(username string) (*User, error) {
 	return nil, nil
 }
 
-func (u *UserStore) GetUserWithPass(username string, password string) (*User, error) {
+func (u *memUserStore) GetUserWithPass(username string, password string) (*User, error) {
 	if v, ok := u.users.Load(username); ok {
 		if usr, ok := v.(User); ok {
 			// TODO use salted hash

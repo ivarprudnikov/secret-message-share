@@ -13,7 +13,7 @@ import (
 const salt = "12345678123456781234567812345678"
 const sessionkey = "12345678123456781234567812345678"
 
-func NewHttpHandler(sessions *sessions.CookieStore, messages storage.MessageStore, users *storage.UserStore) http.Handler {
+func NewHttpHandler(sessions *sessions.CookieStore, messages storage.MessageStore, users storage.UserStore) http.Handler {
 	mux := http.NewServeMux()
 	AddRoutes(mux, sessions, messages, users)
 	return mux
@@ -23,7 +23,7 @@ func NewHttpHandler(sessions *sessions.CookieStore, messages storage.MessageStor
 func main() {
 	sessions := sessions.NewCookieStore([]byte(sessionkey))
 	messages := storage.NewMemMessageStore(salt)
-	users := storage.NewUserStore(salt)
+	users := storage.NewMemUserStore(salt)
 	handler := NewHttpHandler(sessions, messages, users)
 	port := getPort()
 	listenAddr := "127.0.0.1:" + port

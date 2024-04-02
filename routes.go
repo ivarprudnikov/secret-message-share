@@ -40,7 +40,7 @@ func AddRoutes(
 	mux *http.ServeMux,
 	sessions *sessions.CookieStore,
 	messages storage.MessageStore,
-	users *storage.UserStore,
+	users storage.UserStore,
 ) {
 	preReq := newAppMiddleware(sessions, users)
 	mux.Handle("GET /accounts/login", preReq(loginPageHandler(sessions)))
@@ -75,7 +75,7 @@ func loginPageHandler(sessions *sessions.CookieStore) http.HandlerFunc {
 	}
 }
 
-func loginAccountHandler(sessions *sessions.CookieStore, store *storage.UserStore) http.HandlerFunc {
+func loginAccountHandler(sessions *sessions.CookieStore, store storage.UserStore) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		err := r.ParseForm()
 		if err != nil {
@@ -124,7 +124,7 @@ func createAccountPageHandler(sessions *sessions.CookieStore) http.HandlerFunc {
 	}
 }
 
-func createAccountHandler(sessions *sessions.CookieStore, store *storage.UserStore) http.HandlerFunc {
+func createAccountHandler(sessions *sessions.CookieStore, store storage.UserStore) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		err := r.ParseForm()
 		if err != nil {
@@ -266,7 +266,7 @@ func showMsgFullHandler(sessions *sessions.CookieStore, store storage.MessageSto
 }
 
 // adds CSRF token to the session of the get requests
-func newAppMiddleware(sessions *sessions.CookieStore, users *storage.UserStore) func(h http.Handler) http.Handler {
+func newAppMiddleware(sessions *sessions.CookieStore, users storage.UserStore) func(h http.Handler) http.Handler {
 	return func(h http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
