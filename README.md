@@ -164,7 +164,7 @@ The GiHub repository subscribes to security notifications and the owner of the r
 ## Needs further improvement
 
 - Hashing needs to use salt to prevent rainbow table attacks
-- Secure key material need to be passed through the environment variables
+- ~Secure key material need to be passed through the environment variables~
 - ~Encrypt the session cookie contents in addition to the HMAC~
 - Increase the size of the keys
 - Add rate limiting
