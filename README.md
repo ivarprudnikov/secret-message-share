@@ -35,7 +35,7 @@ sequenceDiagram
 **Commands**
 
 - Run tests: `go test ./...`
-- Compile and execute the server binary: `go run .`
+- Compile and execute the server binary: `SERVER_ENV=test go run .`
 - Run the server in an Azure function environment locally: `./scripts/run.sh`
 - Compile and deploy to Azure: `./scripts/azure.fn.deploy.sh`
 - Create required Azure infrastructure: `./scripts/azure.infra.create.sh`
