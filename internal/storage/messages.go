@@ -39,6 +39,7 @@ func (s *memMessageStore) Encrypt(text string, pass string) (string, error) {
 	return ciphertext, nil
 }
 
+// Decrypt cipher text with a given PIN which will be used to derive a key
 func (s *memMessageStore) Decrypt(ciphertext string, pass string) (string, error) {
 	// derive a key from the pass
 	key, err := StrongKey(pass, s.salt)
@@ -75,7 +76,10 @@ func (s *memMessageStore) AddMessage(text string, username string) (Message, err
 		return Message{}, err
 	}
 	ciphertext, err := s.Encrypt(text, pin)
-	msg := NewMessage(username, ciphertext, pin)
+	if err != nil {
+		return Message{}, err
+	}
+	msg, err := NewMessage(username, ciphertext, pin)
 	if err != nil {
 		return Message{}, err
 	}
@@ -103,8 +107,8 @@ func (s *memMessageStore) GetMessage(id string) (*Message, error) {
 func (s *memMessageStore) GetFullMessage(id string, pin string) (*Message, error) {
 	if v, ok := s.messages.Load(id); ok {
 		if msg, ok := v.(Message); ok {
-			// TODO use salted hash
-			if msg.Pin == HashText(pin) {
+
+			if err := CompareHashToPass(msg.Pin, pin); err == nil {
 
 				text, err := s.Decrypt(msg.Content, pin)
 				if err != nil {
@@ -149,14 +153,17 @@ type Message struct {
 	Attempt  int       `json:"Attempt,omitempty"`
 }
 
-func NewMessage(username string, content string, pin string) Message {
+func NewMessage(username string, content string, pin string) (Message, error) {
+	pinHash, err := HashPass(pin)
+	if err != nil {
+		return Message{}, err
+	}
 	return Message{
 		Username: username,
 		Content:  content,
 		Digest:   HashText(content),
 		Created:  time.Now(),
-		// TODO use salt for hashing to mitigate rainbow attacks
-		Pin:     HashText(pin),
-		Attempt: 0,
-	}
+		Pin:      pinHash,
+		Attempt:  0,
+	}, nil
 }

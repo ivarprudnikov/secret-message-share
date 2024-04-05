@@ -145,7 +145,7 @@ One of the biggest threats to the application is the unauthorized access to the 
 
 The data at rest is planned to be stored in the Azure Table Storage. Azure Storage encrypts the data at rest with AES 256-bit encryption with the Azure managed keys. In addition to that all of the sensitive data is hashed or encrypted before being stored in the Table Storage with the encryption keys known to the server and administarators only.
 
-In the case of the breach the data is hashed and will soon use the salt to prevent the rainbow table attacks.
+In the case of the breach the data is hashed and salted using an OWASP recommended Argon2ID hashing algorithm to prevent the rainbow table attacks.
 
 Additional protection is in place where the attacker tries to guess the PIN to access the message. The message will be deleted after the number of failed attempts exceeds the threshold.
 
@@ -163,7 +163,7 @@ The GiHub repository subscribes to security notifications and the owner of the r
 
 ## Needs further improvement
 
-- Hashing needs to use salt to prevent rainbow table attacks
+- ~Hashing needs to use salt to prevent rainbow table attacks~
 - ~Secure key material need to be passed through the environment variables~
 - ~Encrypt the session cookie contents in addition to the HMAC~
 - Increase the size of the keys

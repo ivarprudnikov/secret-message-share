@@ -25,7 +25,10 @@ func (u *memUserStore) AddUser(username string, password string) (User, error) {
 	if _, ok := u.users.Load(username); ok {
 		return User{}, errors.New("username is not available")
 	}
-	usr := NewUser(username, password)
+	usr, err := NewUser(username, password)
+	if err != nil {
+		return User{}, err
+	}
 	u.users.Store(usr.Username, usr)
 	return usr, nil
 }
@@ -45,8 +48,7 @@ func (u *memUserStore) GetUser(username string) (*User, error) {
 func (u *memUserStore) GetUserWithPass(username string, password string) (*User, error) {
 	if v, ok := u.users.Load(username); ok {
 		if usr, ok := v.(User); ok {
-			// TODO use salted hash
-			if usr.Password == HashText(password) {
+			if err := CompareHashToPass(usr.Password, password); err == nil {
 				return &User{
 					Username: usr.Username,
 					Created:  usr.Created,
@@ -64,11 +66,14 @@ type User struct {
 	Created  time.Time `json:"created"`
 }
 
-func NewUser(username string, password string) User {
+func NewUser(username string, password string) (User, error) {
+	hashedPass, err := HashPass(password)
+	if err != nil {
+		return User{}, err
+	}
 	return User{
 		Username: username,
-		// TODO use salt for hashing to mitigate rainbow attacks
-		Password: HashText(password),
+		Password: hashedPass,
 		Created:  time.Now(),
-	}
+	}, nil
 }
