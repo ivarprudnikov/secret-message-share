@@ -5,9 +5,9 @@ import (
 	"embed"
 	"fmt"
 	"html/template"
+	"log/slog"
 
 	"errors"
-	"log"
 	"net/http"
 
 	"github.com/gorilla/sessions"
@@ -79,38 +79,39 @@ func loginAccountHandler(sessions *sessions.CookieStore, store storage.UserStore
 	return func(w http.ResponseWriter, r *http.Request) {
 		err := r.ParseForm()
 		if err != nil {
-			sendError(w, "failed to read request body parameters", err)
+			sendError(r.Context(), w, "failed to read request body parameters", err)
 			return
 		}
 		sess, _ := sessions.Get(r, SESS_COOKIE)
 		csrf := r.PostForm.Get("_csrf")
 		if csrf == "" || csrf != sess.Values[SESS_CSRF_KEY] {
-			sendError(w, "invalid token", nil)
+			sendError(r.Context(), w, "invalid csrf token", nil)
 			return
 		}
 		username := r.PostForm.Get("username")
 		if username == "" {
-			sendError(w, "username is empty", nil)
+			sendError(r.Context(), w, "username is empty", nil)
 			return
 		}
 		password := r.PostForm.Get("password")
 		if password == "" {
-			sendError(w, "password is empty", nil)
+			sendError(r.Context(), w, "password is empty", nil)
 			return
 		}
 		usr, err := store.GetUserWithPass(username, password)
 		if err != nil {
-			sendError(w, "failed to login", err)
+			sendError(r.Context(), w, "failed to login", err)
 			return
 		}
 		if usr == nil {
+			slog.LogAttrs(r.Context(), slog.LevelInfo, "user not found with username/pass", slog.String("username", username))
 			w.WriteHeader(http.StatusUnauthorized)
 			return
 		}
 		sess.Values[SESS_USER_KEY] = username
 		err = sess.Save(r, w)
 		if err != nil {
-			sendError(w, "failed to save session", err)
+			sendError(r.Context(), w, "failed to save session", err)
 			return
 		}
 		http.Redirect(w, r, "/", http.StatusSeeOther)
@@ -128,33 +129,33 @@ func createAccountHandler(sessions *sessions.CookieStore, store storage.UserStor
 	return func(w http.ResponseWriter, r *http.Request) {
 		err := r.ParseForm()
 		if err != nil {
-			sendError(w, "failed to read request body parameters", err)
+			sendError(r.Context(), w, "failed to read request body parameters", err)
 			return
 		}
 		sess, _ := sessions.Get(r, SESS_COOKIE)
 		csrf := r.PostForm.Get("_csrf")
 		if csrf == "" || csrf != sess.Values[SESS_CSRF_KEY] {
-			sendError(w, "invalid token", nil)
+			sendError(r.Context(), w, "invalid token", nil)
 			return
 		}
 		username := r.PostForm.Get("username")
 		if username == "" {
-			sendError(w, "username is empty", nil)
+			sendError(r.Context(), w, "username is empty", nil)
 			return
 		}
 		password := r.PostForm.Get("password")
 		if password == "" {
-			sendError(w, "password is empty", nil)
+			sendError(r.Context(), w, "password is empty", nil)
 			return
 		}
 		password2 := r.PostForm.Get("password2")
 		if password2 != password {
-			sendError(w, "passwords do not match", nil)
+			sendError(r.Context(), w, "passwords do not match", nil)
 			return
 		}
 		usr, err := store.AddUser(username, password)
 		if err != nil {
-			sendError(w, "failed to create account", err)
+			sendError(r.Context(), w, "failed to create account", err)
 			return
 		}
 		tmpl.ExecuteTemplate(w, "account.created.tmpl", usr)
@@ -169,7 +170,7 @@ func listMsgHandler(store storage.MessageStore) http.HandlerFunc {
 		}
 		messages, err := store.ListMessages()
 		if err != nil {
-			sendError(w, "failed to list messages", err)
+			sendError(r.Context(), w, "failed to list messages", err)
 			return
 		}
 		tmpl.ExecuteTemplate(w, "message.list.tmpl", messages)
@@ -187,24 +188,24 @@ func createMsgHandler(sessions *sessions.CookieStore, store storage.MessageStore
 	return func(w http.ResponseWriter, r *http.Request) {
 		err := r.ParseMultipartForm(MAX_FORM_SIZE)
 		if err != nil {
-			sendError(w, "failed to read request body parameters", err)
+			sendError(r.Context(), w, "failed to read request body parameters", err)
 			return
 		}
 		sess, _ := sessions.Get(r, SESS_COOKIE)
 		csrf := r.PostForm.Get("_csrf")
 		if csrf == "" || csrf != sess.Values[SESS_CSRF_KEY] {
-			sendError(w, "invalid token", nil)
+			sendError(r.Context(), w, "invalid token", nil)
 			return
 		}
 		payload := r.PostForm.Get("payload")
 		if payload == "" {
-			sendError(w, "payload is empty", nil)
+			sendError(r.Context(), w, "payload is empty", nil)
 			return
 		}
 		// TODO only auth user is allowed
 		msg, err := store.AddMessage(payload, "someuser")
 		if err != nil {
-			sendError(w, "failed to store message", err)
+			sendError(r.Context(), w, "failed to store message", err)
 			return
 		}
 		tmpl.ExecuteTemplate(w, "message.created.tmpl", msg)
@@ -217,7 +218,7 @@ func showMsgHandler(sessions *sessions.CookieStore, store storage.MessageStore) 
 		msg, err := store.GetMessage(id)
 		sess, _ := sessions.Get(r, SESS_COOKIE)
 		if err != nil {
-			sendError(w, "failed to get a message", err)
+			sendError(r.Context(), w, "failed to get a message", err)
 			return
 		}
 		if msg == nil {
@@ -236,23 +237,23 @@ func showMsgFullHandler(sessions *sessions.CookieStore, store storage.MessageSto
 		id := r.PathValue("id")
 		err := r.ParseForm()
 		if err != nil {
-			sendError(w, "failed to read request body parameters", err)
+			sendError(r.Context(), w, "failed to read request body parameters", err)
 			return
 		}
 		sess, _ := sessions.Get(r, SESS_COOKIE)
 		csrf := r.PostForm.Get("_csrf")
 		if csrf == "" || csrf != sess.Values[SESS_CSRF_KEY] {
-			sendError(w, "invalid token", nil)
+			sendError(r.Context(), w, "invalid token", nil)
 			return
 		}
 		pin := r.PostForm.Get("pin")
 		if pin == "" {
-			sendError(w, "pin is empty", nil)
+			sendError(r.Context(), w, "pin is empty", nil)
 			return
 		}
 		msg, err := store.GetFullMessage(id, pin)
 		if err != nil {
-			sendError(w, "failed to get a message", err)
+			sendError(r.Context(), w, "failed to get a message", err)
 			return
 		}
 		if msg == nil {
@@ -276,7 +277,7 @@ func newAppMiddleware(sessions *sessions.CookieStore, users storage.UserStore) f
 				// setup CSRF token for pages
 				t, err := storage.MakeToken()
 				if err != nil {
-					sendError(w, "failed to setup csrf", err)
+					sendError(r.Context(), w, "failed to setup csrf", err)
 					return
 				}
 				sess.Values[SESS_CSRF_KEY] = t
@@ -285,17 +286,20 @@ func newAppMiddleware(sessions *sessions.CookieStore, users storage.UserStore) f
 			// check if user is set, if yes then add it to context
 			_username := sess.Values[SESS_USER_KEY]
 			if username, ok := _username.(string); ok {
+				var ctx = r.Context()
 				user, err := users.GetUser(username)
+				if err != nil {
+					slog.LogAttrs(ctx, slog.LevelError, "failed to find session user", slog.String("username", username))
+				}
 				if err != nil || user == nil {
 					sess.Values[SESS_USER_KEY] = nil
 				}
-				var ctx = r.Context()
 				*r = *r.WithContext(context.WithValue(ctx, userKey, user))
 			}
 
 			err := sess.Save(r, w)
 			if err != nil {
-				sendError(w, "failed to save session", err)
+				sendError(r.Context(), w, "failed to save session", err)
 				return
 			}
 
@@ -309,6 +313,7 @@ func hasAuth(h http.Handler) http.Handler {
 		var ctx = r.Context()
 		user := ctx.Value(userKey)
 		if user == nil {
+			slog.LogAttrs(ctx, slog.LevelInfo, "user not set, redirecting to login", slog.String("path", r.URL.Path))
 			http.Redirect(w, r, fmt.Sprintf("/accounts/login?uri=%s", r.URL.Path), http.StatusSeeOther)
 			return
 		}
@@ -321,12 +326,12 @@ type ApiError struct {
 	Error   string `json:"error"`
 }
 
-// sendError sends a json error response
-func sendError(w http.ResponseWriter, message string, err error) {
+// sendError sends a json error response and logs the error message
+func sendError(ctx context.Context, w http.ResponseWriter, message string, err error) {
 	if err == nil {
 		err = errors.New(message)
 	}
-	log.Printf("%s: %+v", message, err)
+	slog.LogAttrs(ctx, slog.LevelError, "request processing failed", slog.String("message", message), slog.Any("error", err))
 	apiError := ApiError{
 		Message: message,
 		Error:   err.Error(),

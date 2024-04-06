@@ -3,6 +3,7 @@ package main
 import (
 	_ "embed"
 	"log"
+	"log/slog"
 	"net/http"
 	"os"
 
@@ -19,6 +20,13 @@ func NewHttpHandler(sessions *sessions.CookieStore, messages storage.MessageStor
 
 // main starts the server
 func main() {
+	// Setup a default logger and the level
+	logger := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
+		AddSource: true,
+		Level:     slog.LevelDebug,
+	}))
+	slog.SetDefault(logger)
+
 	config := configuration.NewConfigReader()
 	sessions := sessions.NewCookieStore([]byte(config.GetCookieAuth()), []byte(config.GetCookieEnc()))
 	messages := storage.NewMemMessageStore(config.GetSalt())

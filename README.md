@@ -1,4 +1,4 @@
-# Secret message sharing platform
+# Secret message sharing platform (IN PROGRESS)
 
 [![Build](https://github.com/ivarprudnikov/secret-message-share/actions/workflows/build.yml/badge.svg)](https://github.com/ivarprudnikov/secret-message-share/actions/workflows/build.yml)
 
@@ -135,7 +135,7 @@ Source code is stored in the GitHub account which is protected by the two factor
 
 Any secret material used in the application is provided through the environment variables.
 
-To monitor the application the extensive use of the logs is planned. The logs are stored in the Azure Log Analytics workspace. As mentioned in the network security serction the logs will be kept for a long time to allow the investigation of the security incidents.
+To monitor the application the requests and errors are logged. The logs are stored in the Azure Log Analytics workspace. As mentioned in the network security serction the logs will be kept for a long time to allow the investigation of the security incidents.
 
 In the case of the breach the server can quickly be restored to the previous state by redeploying the server binary from the source code repository. The server is stateless and the data is stored in the Azure Table Storage. The data is encrypted at rest and the keys are known only to the server and the administrators. The security keys can be rotated without the need to redeploy the server binary.
 
@@ -168,10 +168,11 @@ The GiHub repository subscribes to security notifications and the owner of the r
 - ~Encrypt the session cookie contents in addition to the HMAC~
 - Increase the size of the keys
 - Add rate limiting
-- Add logging
+- ~Add logging~
 - Implement Azure Table Storage
 - Add backups
 
 ## References
 
 [1] The NIST Cybersecurity Framework (CSF) 2.0 https://doi.org/10.6028/NIST.CSWP.29
+[2] OWASP cheatsheet https://cheatsheetseries.owasp.org/
