@@ -62,6 +62,15 @@ flowchart TD
     LB --> |Forward| FN
 ```
 
+### Configuration
+
+The server is configured using the environment variables. The configuration values are provided by the Azure Function App service after the application is deployed to the cloud service. The configuration values are stored in the Azure Function App service and are not exposed to the public.
+
+The required values are:
+- `DB_SALT_KEY` - used in the encryption of content but not hashing
+- `COOK_AUTH_KEY` - used for cookie authentication
+- `COOK_ENC_KEY` - used to encrypt the cookie contents
+
 ### Storage models
 
 There are only two things that are stored in the database: users and messages. The user is the one who creates the message and the message is the content that is shared with the anonymous users online.

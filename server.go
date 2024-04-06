@@ -28,6 +28,9 @@ func main() {
 	slog.SetDefault(logger)
 
 	config := configuration.NewConfigReader()
+	if valid, vars := config.IsValid(); !valid {
+		log.Fatalf("Invalid config: %v", vars)
+	}
 	sessions := sessions.NewCookieStore([]byte(config.GetCookieAuth()), []byte(config.GetCookieEnc()))
 	messages := storage.NewMemMessageStore(config.GetSalt())
 	users := storage.NewMemUserStore(config.GetSalt())

@@ -6,6 +6,19 @@ import (
 	"github.com/ivarprudnikov/secretshare/internal/configuration"
 )
 
+func TestConfigValidation(t *testing.T) {
+	defaultConfig := configuration.NewConfigReader()
+	if ok, vars := defaultConfig.IsValid(); ok {
+		t.Fatalf("There should be invalid vars %v", vars)
+	}
+
+	t.Setenv("SERVER_ENV", "test")
+	testConfig := configuration.NewConfigReader()
+	if ok, vars := testConfig.IsValid(); !ok {
+		t.Fatalf("Test env must have a ll valid vars %v", vars)
+	}
+}
+
 func TestIfSetsProdEnv(t *testing.T) {
 
 	defaultConfig := configuration.NewConfigReader()
