@@ -18,6 +18,5 @@ jobs:
       - name: Cypress run
         uses: cypress-io/github-action@v6
         with:
-          working-directory: examples/start
           start: SERVER_ENV=test go run .
           wait-on: 'http://localhost:3000'
