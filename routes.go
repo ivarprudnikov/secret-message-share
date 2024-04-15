@@ -320,8 +320,9 @@ func newAppMiddleware(sessions *sessions.CookieStore, users storage.UserStore) f
 				}
 				if err != nil || user == nil {
 					sess.Values[SESS_USER_KEY] = nil
+				} else {
+					*r = *r.WithContext(context.WithValue(ctx, userKey, user))
 				}
-				*r = *r.WithContext(context.WithValue(ctx, userKey, user))
 			}
 
 			err := sess.Save(r, w)
