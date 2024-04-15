@@ -3,6 +3,9 @@ on: [push]
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      CYPRESS_CRASH_REPORTS: 0
+      CYPRESS_COMMERCIAL_RECOMMENDATIONS: 0
     steps:
       - uses: actions/checkout@v3
       - name: Set up Go
@@ -12,3 +15,9 @@ jobs:
       - run: go version
       - run: go build -v ./...
       - run: go test -v ./...
+      - name: Cypress run
+        uses: cypress-io/github-action@v6
+        with:
+          working-directory: examples/start
+          start: SERVER_ENV=test go run .
+          wait-on: 'http://localhost:3000'

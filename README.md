@@ -39,6 +39,9 @@ sequenceDiagram
 - Run the server in an Azure function environment locally: `./scripts/run.sh`
 - Compile and deploy to Azure: `./scripts/azure.fn.deploy.sh`
 - Create required Azure infrastructure: `./scripts/azure.infra.create.sh`
+- Run functional e2e tests:
+  - first, start the local server `SERVER_ENV=test go run .`
+  - then run cypress through `npx cypress open` (you'll need node installed)
 
 ## Architecture
 
