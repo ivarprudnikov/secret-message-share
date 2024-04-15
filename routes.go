@@ -184,7 +184,8 @@ func listMsgHandler(sessions *sessions.CookieStore, store storage.MessageStore) 
 			return
 		}
 		sess, _ := sessions.Get(r, SESS_COOKIE)
-		messages, err := store.ListMessages()
+		username := sess.Values[SESS_USER_KEY]
+		messages, err := store.ListMessages(username.(string))
 		if err != nil {
 			sendError(r.Context(), sess, w, "failed to list messages", err)
 			return
@@ -223,8 +224,8 @@ func createMsgHandler(sessions *sessions.CookieStore, store storage.MessageStore
 			sendError(r.Context(), sess, w, "payload is empty", nil)
 			return
 		}
-		// TODO only auth user is allowed
-		msg, err := store.AddMessage(payload, "someuser")
+		username := sess.Values[SESS_USER_KEY]
+		msg, err := store.AddMessage(payload, username.(string))
 		if err != nil {
 			sendError(r.Context(), sess, w, "failed to store message", err)
 			return
@@ -292,6 +293,7 @@ func showMsgFullHandler(sessions *sessions.CookieStore, store storage.MessageSto
 }
 
 // adds CSRF token to the session of the get requests
+// adds user to the context if session exists
 func newAppMiddleware(sessions *sessions.CookieStore, users storage.UserStore) func(h http.Handler) http.Handler {
 	return func(h http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

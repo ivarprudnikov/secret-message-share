@@ -9,7 +9,7 @@ import (
 const MAX_PIN_ATTEMPTS = 5
 
 type MessageStore interface {
-	ListMessages() ([]Message, error)
+	ListMessages(username string) ([]Message, error)
 	AddMessage(text string, username string) (Message, error)
 	GetMessage(id string) (*Message, error)
 	GetFullMessage(id string, pin string) (*Message, error)
@@ -53,10 +53,10 @@ func (s *memMessageStore) Decrypt(ciphertext string, pass string) (string, error
 	return plaintext, nil
 }
 
-func (s *memMessageStore) ListMessages() ([]Message, error) {
+func (s *memMessageStore) ListMessages(username string) ([]Message, error) {
 	var msgs []Message
 	s.messages.Range(func(k, v any) bool {
-		if msg, ok := v.(Message); ok {
+		if msg, ok := v.(Message); ok && msg.Username == username {
 			// do not expose sensitive info
 			msgs = append(msgs, Message{
 				Digest:  msg.Digest,
