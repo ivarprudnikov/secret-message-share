@@ -3,7 +3,7 @@
 {{template "head.tmpl"}}
 <body>
   <div class="container">
-    {{template "nav.tmpl"}}
+    {{template "nav.tmpl" .}}
     
     <h1>Messages</h1>
 
@@ -16,7 +16,7 @@
       </thead>
       <tbody>
 
-        {{range .}}
+        {{range .data}}
           <tr>
             <td><a href="/messages/{{ .Digest }}">{{ .Digest }}</a></td>
             <td>{{ .Created }}</td>
@@ -26,7 +26,7 @@
       </tbody>
     </table>
 
-    {{template "footer.tmpl"}}
+    {{template "footer.tmpl" .}}
   </div>
 </body>
 </html>

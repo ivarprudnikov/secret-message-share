@@ -3,17 +3,17 @@
 {{template "head.tmpl"}}
 <body>
   <div class="container">
-    {{template "nav.tmpl"}}
+    {{template "nav.tmpl" .}}
     
     <h1>Message</h1>
 
-    <p>ID: {{ .message.Digest }}</p>
-    <p>Created at: {{ .message.Created }}</p>
-    {{if .message.Pin}}
-      <p>PIN: {{.message.Pin}}</p>
+    <p>ID: {{ .data.Digest }}</p>
+    <p>Created at: {{ .data.Created }}</p>
+    {{if .data.Pin}}
+      <p>PIN: {{.data.Pin}}</p>
     {{else}}
-      <form id="show" class="my-4" name="show" action="/messages/{{ .message.Digest }}" method="POST">
-        <input type="hidden" name="_csrf" value="{{ .csrf }}" />
+      <form id="show" class="my-4" name="show" action="/messages/{{ .data.Digest }}" method="POST">
+        <input type="hidden" name="_csrf" value="{{ .session.csrf }}" />
         <div class="mb-3">
           <label for="pin" class="form-label">PIN</label>
           <input type="password" name="pin" class="form-control" aria-describedby="pinHelp" id="pin" placeholder="secret PIN" />
@@ -22,9 +22,9 @@
         <button type="submit" class="btn btn-primary">Validate PIN</button>
       </form>
     {{end}}
-    {{if .message.Content}}<p>Content: {{.message.Content}}</p>{{end}}
+    {{if .data.Content}}<p>Content: {{.data.Content}}</p>{{end}}
 
-    {{template "footer.tmpl"}}
+    {{template "footer.tmpl" .}}
   </div>
 </body>
 </html>

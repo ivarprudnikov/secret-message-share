@@ -18,9 +18,12 @@
 
     <ul class="nav nav-pills">
         <li class="nav-item"><a href="/" class="nav-link">Home</a></li>
-        <li class="nav-item"><a href="/messages" class="nav-link">Messages</a></li>
-        <li class="nav-item"><a href="/messages/new" class="nav-link">Create new</a></li>
-        <li class="nav-item"><a href="/accounts/login" class="nav-link">Login</a></li>
-        <li class="nav-item"><a href="/accounts/new" class="nav-link">Sign up</a></li>
+        {{if .session.user }}
+            <li class="nav-item"><a href="/messages" class="nav-link">Messages</a></li>
+            <li class="nav-item"><a href="/messages/new" class="nav-link">Create new</a></li>
+        {{else}}
+            <li class="nav-item"><a href="/accounts/login" class="nav-link">Login</a></li>
+            <li class="nav-item"><a href="/accounts/new" class="nav-link">Sign up</a></li>
+        {{end}}
     </ul>
 </header>

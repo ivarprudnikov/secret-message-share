@@ -3,13 +3,13 @@
 {{template "head.tmpl"}}
 <body>
   <div class="container">
-    {{template "nav.tmpl"}}
+    {{template "nav.tmpl" .}}
     
     <h1>Error</h1>
-    <p>{{ .Message }}</p>
-    <p>{{ .Error }}</p>
+    <p>{{ .error.Message }}</p>
+    <p>{{ .error.Error }}</p>
 
-    {{template "footer.tmpl"}}
+    {{template "footer.tmpl" .}}
   </div>
 </body>
 </html>

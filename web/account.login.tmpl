@@ -3,13 +3,13 @@
 {{template "head.tmpl"}}
 <body>
   <div class="container">
-    {{template "nav.tmpl"}}
+    {{template "nav.tmpl" .}}
     
     <div class="row">
       <div class="col-md-6">
         <h3>Login</h3>
         <form id="login" class="my-4" name="login" action="/accounts/login" method="POST">
-          <input type="hidden" name="_csrf" value="{{ .csrf }}" />
+          <input type="hidden" name="_csrf" value="{{ .session.csrf }}" />
           <div class="mb-3">
             <label for="username" class="form-label">Username</label>
             <input type="text" name="username" class="form-control" id="username" placeholder="doejoe" />
@@ -23,7 +23,7 @@
       </div>
     </div>
 
-    {{template "footer.tmpl"}}
+    {{template "footer.tmpl" .}}
   </div>
 </body>
 </html>

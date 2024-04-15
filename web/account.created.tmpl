@@ -3,13 +3,13 @@
 {{template "head.tmpl"}}
 <body>
   <div class="container">
-    {{template "nav.tmpl"}}
+    {{template "nav.tmpl" .}}
     
     <h1>Account ceated</h1>
-    <p>Your username: {{ .Username }}</p>
-    <p>Created at: {{ .Created }}</p>
+    <p>Your username: {{ .data.Username }}</p>
+    <p>Created at: {{ .data.Created }}</p>
 
-    {{template "footer.tmpl"}}
+    {{template "footer.tmpl" .}}
   </div>
 </body>
 </html>

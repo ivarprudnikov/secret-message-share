@@ -3,16 +3,16 @@
 {{template "head.tmpl"}}
 <body>
   <div class="container">
-    {{template "nav.tmpl"}}
+    {{template "nav.tmpl" .}}
     
     <h1>Message</h1>
 
-    <p>ID: <a href="/messages/{{ .Digest }}">{{ .Digest }}</a></p>
-    <p>Created at: {{ .Created }}</p>
-    <p class="fw-bold">PIN: {{.Pin}}</p>
-    <p>Content: {{.Content}}</p>
+    <p>ID: <a href="/messages/{{ .data.Digest }}">{{ .data.Digest }}</a></p>
+    <p>Created at: {{ .data.Created }}</p>
+    <p class="fw-bold">PIN: {{.data.Pin}}</p>
+    <p>Content: {{.data.Content}}</p>
 
-    {{template "footer.tmpl"}}
+    {{template "footer.tmpl" .}}
   </div>
 </body>
 </html>
