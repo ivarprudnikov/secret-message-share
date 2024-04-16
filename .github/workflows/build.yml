@@ -12,12 +12,15 @@ jobs:
       - run: go version
       - run: go build -v ./...
       - run: go test -v ./...
-      - name: Cypress run
+      - name: Install Cypress
+        run: npm install cypress@13.7.3
+      - name: Run Cypress tests
         uses: cypress-io/github-action@v6
         with:
           start: SERVER_ENV=test go run .
           cache-key: somevalue
           wait-on: 'http://localhost:3000'
+          install: false
         env:
           CYPRESS_CRASH_REPORTS: 0
           CYPRESS_COMMERCIAL_RECOMMENDATIONS: 0
