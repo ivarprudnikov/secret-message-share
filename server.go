@@ -34,6 +34,13 @@ func main() {
 	sessions := sessions.NewCookieStore([]byte(config.GetCookieAuth()), []byte(config.GetCookieEnc()))
 	messages := storage.NewMemMessageStore(config.GetSalt())
 	users := storage.NewMemUserStore(config.GetSalt())
+	if !config.IsProd() {
+		// add test users
+		users.AddUser("joe", "joe")
+		users.AddUser("alice", "alice")
+		// add a test message
+		messages.AddMessage("foobar", "joe")
+	}
 	handler := NewHttpHandler(sessions, messages, users)
 	port := getPort()
 	listenAddr := "127.0.0.1:" + port
