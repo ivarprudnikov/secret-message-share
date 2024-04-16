@@ -19,7 +19,7 @@ jobs:
         with:
           start: go run .
           cache-key: somevalue
-          wait-on: 'http://localhost:3000'
+          wait-on: 'http://localhost:8080'
           install: false
         env:
           SERVER_ENV: test
