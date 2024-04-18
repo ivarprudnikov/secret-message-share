@@ -31,6 +31,7 @@ sequenceDiagram
 
 - Install Go to compile and run the application: https://golang.org/doc/install
 - Install Node to run e2e tests: https://nodejs.org/en/download/
+- Install Azure Functions Core Tools if you will run the local in Azure functions environment: https://learn.microsoft.com/en-us/azure/azure-functions/functions-run-local
 - Access to Azure if you will create/update/deploy function app: https://portal.azure.com
 
 **Commands**
