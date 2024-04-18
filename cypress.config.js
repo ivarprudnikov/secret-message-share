@@ -1,3 +1,4 @@
+// https://docs.cypress.io/guides/references/configuration
 module.exports = {
   fixturesFolder: false,
   e2e: {
