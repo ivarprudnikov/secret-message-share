@@ -53,6 +53,8 @@ func (c *ConfigReader) GetCookieEnc() string {
 	return c.getKey(keyCookieEnc, true)
 }
 
+// Production environment expects the value to be set in the
+// environmental variable. If not set the application will fail to start.
 func (c *ConfigReader) getKey(name string, assert bool) string {
 	var k string
 	if !c.isProd {

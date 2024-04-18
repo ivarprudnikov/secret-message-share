@@ -7,12 +7,12 @@
     
     <h1>Message</h1>
 
-    <p>ID: {{ .data.Digest }}</p>
-    <p>Created at: {{ .data.Created }}</p>
+    <p>ID: {{ .data.PartitionKey }}</p>
+    <p>Created at: {{ .data.Timestamp }}</p>
     {{if .data.Pin}}
       <p>PIN: {{.data.Pin}}</p>
     {{else}}
-      <form id="show" class="my-4" name="show" action="/messages/{{ .data.Digest }}" method="POST">
+      <form id="show" class="my-4" name="show" action="/messages/{{ .data.PartitionKey }}" method="POST">
         <input type="hidden" name="_csrf" value="{{ .session.csrf }}" />
         <div class="mb-3">
           <label for="pin" class="form-label">PIN</label>

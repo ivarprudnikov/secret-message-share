@@ -1,4 +1,7 @@
 #!/bin/bash
+
+set -euo pipefail
+
 # Function app and storage account names must be unique.
 
 LOCATION="northeurope"
@@ -56,3 +59,7 @@ az webapp config storage-account add \
 
 # List webapp storage account
 az webapp config storage-account list --resource-group $RG --name $FN_NAME
+
+# Create tables to use in the app
+az storage table create --account-name $STORAGE_ACCOUNT --account-key $AZURE_STORAGE_KEY --name users --fail-on-exist
+az storage table create --account-name $STORAGE_ACCOUNT --account-key $AZURE_STORAGE_KEY --name messages --fail-on-exist

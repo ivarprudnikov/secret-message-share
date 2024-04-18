@@ -10,6 +10,7 @@ import (
 	"github.com/gorilla/sessions"
 	"github.com/ivarprudnikov/secretshare/internal/configuration"
 	"github.com/ivarprudnikov/secretshare/internal/storage"
+	"github.com/ivarprudnikov/secretshare/internal/storage/memstore"
 )
 
 func NewHttpHandler(sessions *sessions.CookieStore, messages storage.MessageStore, users storage.UserStore) http.Handler {
@@ -32,15 +33,7 @@ func main() {
 		log.Fatalf("Invalid config: %v", vars)
 	}
 	sessions := sessions.NewCookieStore([]byte(config.GetCookieAuth()), []byte(config.GetCookieEnc()))
-	messages := storage.NewMemMessageStore(config.GetSalt())
-	users := storage.NewMemUserStore(config.GetSalt())
-	if !config.IsProd() {
-		// add test users
-		users.AddUser("joe", "joe")
-		users.AddUser("alice", "alice")
-		// add a test message
-		messages.AddMessage("foobar", "joe")
-	}
+	messages, users := getStorageImplementation(config)
 	handler := NewHttpHandler(sessions, messages, users)
 	port := getPort()
 	listenAddr := "127.0.0.1:" + port
@@ -49,9 +42,29 @@ func main() {
 }
 
 // getPort returns the port of this function app
+// in Azure the environmental variable will tell the port to run on FUNCTIONS_CUSTOMHANDLER_PORT
 func getPort() string {
 	if val, ok := os.LookupEnv("FUNCTIONS_CUSTOMHANDLER_PORT"); ok {
 		return val
 	}
 	return "8080"
+}
+
+// Production environment needs to work with Azure Table Storage which is not
+// available locally. Locally an in-memory implementation of storage is used.
+func getStorageImplementation(config *configuration.ConfigReader) (storage.MessageStore, storage.UserStore) {
+	messages := memstore.NewMemMessageStore(config.GetSalt())
+	users := memstore.NewMemUserStore(config.GetSalt())
+	if !config.IsProd() {
+		// add test users
+		users.AddUser("joe", "joe")
+		users.AddUser("alice", "alice")
+		// add a test message
+		msg, err := messages.AddMessage("foobar", "joe")
+		if err != nil {
+			panic("Unexpected error")
+		}
+		log.Printf("Generated PIN for test message %s", msg.Pin)
+	}
+	return messages, users
 }

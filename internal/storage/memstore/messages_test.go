@@ -1,14 +1,15 @@
-package storage_test
+package memstore_test
 
 import (
 	"testing"
 
 	"github.com/ivarprudnikov/secretshare/internal/storage"
+	"github.com/ivarprudnikov/secretshare/internal/storage/memstore"
 )
 
 func TestMessageStore_GetMessage(t *testing.T) {
 	// Create a new MessageStore instance
-	store := storage.NewMemMessageStore("12345678123456781234567812345678")
+	store := memstore.NewMemMessageStore("12345678123456781234567812345678")
 
 	// Create a test message
 	content := "testcontent testcontent testcontent testcontent testcontent testcontent"
@@ -26,25 +27,25 @@ func TestMessageStore_GetMessage(t *testing.T) {
 		t.Fatalf("Unexpected message")
 	}
 
-	// Get shallow message
-	foundMsg, err = store.GetMessage(msg.Digest)
+	// Get encrypted message
+	foundMsg, err = store.GetMessage(msg.PartitionKey)
 	if err != nil {
 		t.Fatalf("Expected no error, got %v", err)
 	}
 	if foundMsg == nil {
 		t.Fatalf("Expected message to be found, got nil")
 	}
-	if foundMsg.Content != "" {
-		t.Fatalf("Expected no content, got %s", foundMsg.Content)
+	if foundMsg.Content == content {
+		t.Fatalf("Expected encrypted content, got %s", foundMsg.Content)
 	}
-	if foundMsg.Pin != "" {
-		t.Fatalf("Expected no pin, got %s", foundMsg.Pin)
+	if foundMsg.Pin == msg.Pin {
+		t.Fatalf("Expected encrypted pin, got %s", foundMsg.Pin)
 	}
 }
 
 func TestMessageStore_GetFullMessage(t *testing.T) {
 	// Create a new MessageStore instance
-	store := storage.NewMemMessageStore("12345678123456781234567812345678")
+	store := memstore.NewMemMessageStore("12345678123456781234567812345678")
 
 	// Create a test message
 	content := "testcontent testcontent testcontent testcontent testcontent testcontent"
@@ -54,7 +55,7 @@ func TestMessageStore_GetFullMessage(t *testing.T) {
 	}
 
 	// invalid Pin
-	foundMsg, err := store.GetFullMessage(msg.Digest, "foobar")
+	foundMsg, err := store.GetFullMessage(msg.PartitionKey, "foobar")
 	if err != nil {
 		t.Fatalf("Expected no error, got %v", err)
 	}
@@ -63,7 +64,7 @@ func TestMessageStore_GetFullMessage(t *testing.T) {
 	}
 
 	// Get full message
-	foundMsg, err = store.GetFullMessage(msg.Digest, msg.Pin)
+	foundMsg, err = store.GetFullMessage(msg.PartitionKey, msg.Pin)
 	if err != nil {
 		t.Fatalf("Expected no error, got %v", err)
 	}
@@ -86,7 +87,7 @@ func TestMessageStore_GetFullMessage(t *testing.T) {
 
 func TestMessageStore_DeletedAfterFailedAttempts(t *testing.T) {
 	// Create a new MessageStore instance
-	store := storage.NewMemMessageStore("12345678123456781234567812345678")
+	store := memstore.NewMemMessageStore("12345678123456781234567812345678")
 
 	// Create a test message
 	content := "testcontent testcontent testcontent testcontent testcontent testcontent"
@@ -96,17 +97,17 @@ func TestMessageStore_DeletedAfterFailedAttempts(t *testing.T) {
 	}
 
 	// before, the message exists
-	foundMsg, _ := store.GetMessage(msg.Digest)
+	foundMsg, _ := store.GetMessage(msg.PartitionKey)
 	if foundMsg == nil {
 		t.Fatalf("Expected message to be found, got nil")
 	}
 
 	// invalid Pin
 	for range storage.MAX_PIN_ATTEMPTS {
-		store.GetFullMessage(msg.Digest, "invalidpin")
+		store.GetFullMessage(msg.PartitionKey, "invalidpin")
 	}
 
-	goneMessage, _ := store.GetMessage(msg.Digest)
+	goneMessage, _ := store.GetMessage(msg.PartitionKey)
 	if goneMessage != nil {
 		t.Fatalf("Expected the message to be deleted")
 	}
@@ -114,7 +115,7 @@ func TestMessageStore_DeletedAfterFailedAttempts(t *testing.T) {
 
 func TestMessageStore_EncryptDecrypt(t *testing.T) {
 	// Create a new MessageStore instance
-	store := storage.NewMemMessageStore("12345678123456781234567812345678")
+	store := memstore.NewMemMessageStore("12345678123456781234567812345678")
 
 	message := "abc"
 	key := "pass"

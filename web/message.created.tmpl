@@ -7,8 +7,8 @@
     
     <h1>Message</h1>
 
-    <p>ID: <a href="/messages/{{ .data.Digest }}">{{ .data.Digest }}</a></p>
-    <p>Created at: {{ .data.Created }}</p>
+    <p>ID: <a href="/messages/{{ .data.PartitionKey }}">{{ .data.PartitionKey }}</a></p>
+    <p>Created at: {{ .data.Timestamp }}</p>
     <p class="fw-bold">PIN: {{.data.Pin}}</p>
     <p>Content: {{.data.Content}}</p>
 

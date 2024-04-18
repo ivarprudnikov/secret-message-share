@@ -1,14 +1,14 @@
-package storage_test
+package memstore_test
 
 import (
 	"testing"
 
-	"github.com/ivarprudnikov/secretshare/internal/storage"
+	"github.com/ivarprudnikov/secretshare/internal/storage/memstore"
 )
 
 func TestUserStore_GetUserWithPass(t *testing.T) {
 	// Create a new UserStore instance
-	store := storage.NewMemUserStore("123")
+	store := memstore.NewMemUserStore("123")
 
 	// Create a test user
 	username := "testuser"
@@ -24,8 +24,8 @@ func TestUserStore_GetUserWithPass(t *testing.T) {
 	if foundUser == nil {
 		t.Fatalf("Expected user to be found, got nil")
 	}
-	if foundUser.Username != username {
-		t.Fatalf("Expected username %s, got %s", username, foundUser.Username)
+	if foundUser.PartitionKey != username {
+		t.Fatalf("Expected username %s, got %s", username, foundUser.PartitionKey)
 	}
 
 	// Test case 2: Invalid password

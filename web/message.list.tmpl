@@ -18,8 +18,8 @@
 
         {{range .data}}
           <tr class="message-row">
-            <td><a href="/messages/{{ .Digest }}">{{ .Digest }}</a></td>
-            <td>{{ .Created }}</td>
+            <td><a href="/messages/{{ .PartitionKey }}">{{ .PartitionKey }}</a></td>
+            <td>{{ .Timestamp }}</td>
           </tr>
         {{end}}
         
