@@ -263,26 +263,25 @@ func showMsgFullHandler(sessions *sessions.CookieStore, store storage.MessageSto
 		sess, _ := sessions.Get(r, SESS_COOKIE)
 		err := r.ParseForm()
 		if err != nil {
-			sendError(r.Context(), sess, w, "failed to read request body parameters", err)
+			slog.LogAttrs(r.Context(), slog.LevelError, "failed to read request body parameters")
+			sendError(r.Context(), sess, w, "failed to get a message", err)
 			return
 		}
 		csrf := r.PostForm.Get("_csrf")
 		if csrf == "" || csrf != sess.Values[SESS_CSRF_KEY] {
-			sendError(r.Context(), sess, w, "invalid token", nil)
+			slog.LogAttrs(r.Context(), slog.LevelError, "invalid csrf token")
+			sendError(r.Context(), sess, w, "failed to get a message", nil)
 			return
 		}
 		pin := r.PostForm.Get("pin")
 		if pin == "" {
-			sendError(r.Context(), sess, w, "pin is empty", nil)
+			slog.LogAttrs(r.Context(), slog.LevelError, "message pin is empty")
+			sendError(r.Context(), sess, w, "failed to get a message", nil)
 			return
 		}
 		msg, err := store.GetFullMessage(id, pin)
-		if err != nil {
+		if err != nil || msg == nil {
 			sendError(r.Context(), sess, w, "failed to get a message", err)
-			return
-		}
-		if msg == nil {
-			send404(w)
 			return
 		}
 		tmpl.ExecuteTemplate(w, "message.show.tmpl", map[string]interface{}{
