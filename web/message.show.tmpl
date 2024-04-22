@@ -35,6 +35,9 @@
                 <input type="password" name="pin" class="form-control" aria-describedby="pinHelp" id="pin" placeholder="secret PIN" />
                 <div id="pinHelp" class="form-text">Provide a PIN to unlock content</div>
               </div>
+              <div class="mb-3">
+                <div class="form-text">Remaining attempts: {{ .data.AttemptsRemaining }}</div>
+              </div>
               <button type="submit" class="btn btn-primary">Validate and decrypt</button>
             </form>
           {{end}} 

@@ -108,11 +108,11 @@ func (s *memMessageStore) GetFullMessage(id string, pin string) (*storage.Messag
 				return &msg, nil
 			}
 
-			msg.Attempt += 1
+			msg.AttemptsRemaining -= 1
 			s.messages.Store(id, msg)
 
 			// If the pin was wrong then start tracking attempts
-			if msg.Attempt >= storage.MAX_PIN_ATTEMPTS {
+			if msg.AttemptsRemaining <= 0 {
 				s.messages.Delete(id)
 			}
 		} else {

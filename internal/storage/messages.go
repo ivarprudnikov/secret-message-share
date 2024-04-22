@@ -19,9 +19,9 @@ type MessageStore interface {
 
 type Message struct {
 	aztables.Entity
-	Content string `json:"content,omitempty"`
-	Pin     string `json:"pin,omitempty"`
-	Attempt int    `json:"Attempt,omitempty"`
+	Content           string `json:"content,omitempty"`
+	Pin               string `json:"pin,omitempty"`
+	AttemptsRemaining int    `json:"remaining,omitempty"`
 }
 
 func NewMessage(username string, ciphertext string, pin string) (Message, error) {
@@ -36,8 +36,8 @@ func NewMessage(username string, ciphertext string, pin string) (Message, error)
 			RowKey:       username,
 			Timestamp:    aztables.EDMDateTime(t),
 		},
-		Content: ciphertext,
-		Pin:     pinHash,
-		Attempt: 0,
+		Content:           ciphertext,
+		Pin:               pinHash,
+		AttemptsRemaining: MAX_PIN_ATTEMPTS,
 	}, nil
 }
