@@ -5,24 +5,43 @@
   <div class="container">
     {{template "nav.tmpl" .}}
     
-    <h1>Message</h1>
+    <div class="container">
+      <div class="row">
+        <div class="col-8">
 
-    <p>ID: {{ .data.PartitionKey }}</p>
-    <p>Created at: {{ .data.Timestamp }}</p>
-    {{if .data.Pin}}
-      <p>PIN: {{.data.Pin}}</p>
-    {{else}}
-      <form id="show" class="my-4" name="show" action="/messages/{{ .data.PartitionKey }}" method="POST">
-        <input type="hidden" name="_csrf" value="{{ .session.csrf }}" />
-        <div class="mb-3">
-          <label for="pin" class="form-label">PIN</label>
-          <input type="password" name="pin" class="form-control" aria-describedby="pinHelp" id="pin" placeholder="secret PIN" />
-          <div id="pinHelp" class="form-text">Provide a PIN to unlock content</div>
+          <h1>Secret message</h1>
+          <p>ID: {{ .data.PartitionKey }}</p>
+          <p>Created at: {{ .data.Timestamp }}</p>
+
+          {{if .data.Pin}}
+          <h3>Content</h3>
+          <p>{{.data.Content}}</p>
+          {{else}}
+          <h3>Content</h3>
+          <svg width="100" height="100" class="bi mt-4 mb-3" style="color: var(--bs-indigo);" xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960"><path d="M240-80q-33 0-56.5-23.5T160-160v-400q0-33 23.5-56.5T240-640h40v-80q0-83 58.5-141.5T480-920q83 0 141.5 58.5T680-720v80h40q33 0 56.5 23.5T800-560v400q0 33-23.5 56.5T720-80H240Zm0-80h480v-400H240v400Zm240-120q33 0 56.5-23.5T560-360q0-33-23.5-56.5T480-440q-33 0-56.5 23.5T400-360q0 33 23.5 56.5T480-280ZM360-640h240v-80q0-50-35-85t-85-35q-50 0-85 35t-35 85v80ZM240-160v-400 400Z"/></svg>
+          {{end}}
+
         </div>
-        <button type="submit" class="btn btn-primary">Validate PIN</button>
-      </form>
-    {{end}}
-    {{if .data.Content}}<p>Content: {{.data.Content}}</p>{{end}}
+        <div class="col-4">
+          
+          <h3>Message decryption</h3>
+          {{if .data.Pin}}
+            <p>Message decrypted and deleted!</p>
+          {{else}}
+            <form id="show" class="my-4" name="show" action="/messages/{{ .data.PartitionKey }}" method="POST">
+              <input type="hidden" name="_csrf" value="{{ .session.csrf }}" />
+              <div class="mb-3">
+                <label for="pin" class="form-label">PIN</label>
+                <input type="password" name="pin" class="form-control" aria-describedby="pinHelp" id="pin" placeholder="secret PIN" />
+                <div id="pinHelp" class="form-text">Provide a PIN to unlock content</div>
+              </div>
+              <button type="submit" class="btn btn-primary">Validate and decrypt</button>
+            </form>
+          {{end}} 
+
+        </div>
+      </div>
+    </div>
 
     {{template "footer.tmpl" .}}
   </div>

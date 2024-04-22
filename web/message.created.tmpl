@@ -5,12 +5,27 @@
   <div class="container">
     {{template "nav.tmpl" .}}
     
-    <h1>Message</h1>
+    <div class="container">
+      <div class="row justify-content-center">
+        <div class="col-6">
+          
+          <div class="card text-center">
+            <div class="card-body">
+              <h5 class="card-title">Mesage securely stored!</h5>
+              <h6 class="card-subtitle mb-2 text-body-secondary">Now, write down the PIN!</h6>
+              <p class="card-text">
+                This is the only time you will see the generated PIN. The PIN will decrypt the message:
+              </p>
+              <p class="fw-bold text-center fs-2">
+                {{.data.Pin}}
+              </p>
+              <a href="/messages/{{ .data.PartitionKey }}" class="card-link">Link to the message</a>
+            </div>
+          </div>  
 
-    <p>ID: <a href="/messages/{{ .data.PartitionKey }}">{{ .data.PartitionKey }}</a></p>
-    <p>Created at: {{ .data.Timestamp }}</p>
-    <p class="fw-bold">PIN: {{.data.Pin}}</p>
-    <p>Content: {{.data.Content}}</p>
+        </div>
+      </div>
+    </div>
 
     {{template "footer.tmpl" .}}
   </div>
