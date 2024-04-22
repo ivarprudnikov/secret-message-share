@@ -48,6 +48,7 @@ func AddRoutes(
 	preReq := newAppMiddleware(sessions, users)
 	mux.Handle("GET /accounts/login", preReq(loginPageHandler(sessions)))
 	mux.Handle("POST /accounts/login", preReq(loginAccountHandler(sessions, users)))
+	mux.Handle("GET /accounts/logout", preReq(logoutAccountHandler(sessions)))
 	mux.Handle("GET /accounts/new", preReq(createAccountPageHandler(sessions)))
 	mux.Handle("POST /accounts", preReq(createAccountHandler(sessions, users)))
 	mux.Handle("GET /messages", preReq(hasAuth(listMsgHandler(sessions, messages))))
@@ -120,6 +121,19 @@ func loginAccountHandler(sessions *sessions.CookieStore, store storage.UserStore
 		}
 		sess.Values[SESS_USER_KEY] = username
 		err = sess.Save(r, w)
+		if err != nil {
+			sendError(r.Context(), sess, w, "failed to save session", err)
+			return
+		}
+		http.Redirect(w, r, "/", http.StatusSeeOther)
+	}
+}
+
+func logoutAccountHandler(sessions *sessions.CookieStore) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		sess, _ := sessions.Get(r, SESS_COOKIE)
+		sess.Values[SESS_USER_KEY] = nil
+		err := sess.Save(r, w)
 		if err != nil {
 			sendError(r.Context(), sess, w, "failed to save session", err)
 			return

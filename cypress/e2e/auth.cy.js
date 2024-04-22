@@ -7,6 +7,20 @@ describe('auth spec', () => {
     cy.contains('footer', 'User: joe').should('be.visible')
     cy.clearCookies()
   })
+  it('can logout after logging in', () => {
+    cy.visit('/accounts/login')
+    cy.get('#username').type('joe')
+    cy.get('#password').type('joe')
+    cy.get('.btn-primary').click()
+    cy.contains('footer', 'User: joe').should('be.visible')
+
+    cy.contains('header a', 'Logout').should('be.visible')
+    cy.get('.logout-link').click()
+
+    cy.contains('footer', 'User: joe').should('not.exist')
+
+    cy.clearCookies()
+  })
   it('creates account and can login', () => {
     Cypress.Cookies.debug(true)
     cy.visit('/accounts/new')
