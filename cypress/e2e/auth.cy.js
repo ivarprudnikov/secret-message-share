@@ -1,25 +1,13 @@
 describe('auth spec', () => {
   it('can login with a preconfigured account', () => {
-    cy.visit('/accounts/login')
-    cy.get('#username').type('joe')
-    cy.get('#password').type('joe')
-    cy.get('.btn-primary').click()
-    cy.contains('footer', 'User: joe').should('be.visible')
+    cy.loginJoe()
     cy.clearCookies()
   })
   it('can logout after logging in', () => {
-    cy.visit('/accounts/login')
-    cy.get('#username').type('joe')
-    cy.get('#password').type('joe')
-    cy.get('.btn-primary').click()
-    cy.contains('footer', 'User: joe').should('be.visible')
-
+    cy.loginJoe()
     cy.contains('header a', 'Logout').should('be.visible')
-    cy.get('.logout-link').click()
-
+    cy.logout()
     cy.contains('footer', 'User: joe').should('not.exist')
-
-    cy.clearCookies()
   })
   it('creates account and can login', () => {
     Cypress.Cookies.debug(true)

@@ -75,7 +75,7 @@ func TestMessageStore_GetFullMessage(t *testing.T) {
 		t.Fatalf("Expected content %s, got %s", content, foundMsg.Content)
 	}
 
-	// Mesage was deleted after access
+	// Message was deleted after access
 	msgs, err := store.ListMessages("testuser")
 	if err != nil {
 		t.Fatalf("Expected no error, got %v", err)

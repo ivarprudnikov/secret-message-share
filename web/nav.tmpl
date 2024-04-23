@@ -17,14 +17,14 @@
     </a>
 
     <ul class="nav nav-pills">
-        <li class="nav-item"><a href="/" class="nav-link">Home</a></li>
+        <li class="nav-item"><a href="/" class="nav-link home-link">Home</a></li>
         {{if .session.user }}
-            <li class="nav-item"><a href="/messages" class="nav-link">Messages</a></li>
-            <li class="nav-item"><a href="/messages/new" class="nav-link">Create new</a></li>
+            <li class="nav-item"><a href="/messages" class="nav-link messages-list">Messages</a></li>
+            <li class="nav-item"><a href="/messages/new" class="nav-link messages-new">Create new</a></li>
             <li class="nav-item"><a href="/accounts/logout" class="nav-link logout-link">Logout</a></li>
         {{else}}
-            <li class="nav-item"><a href="/accounts/login" class="nav-link">Login</a></li>
-            <li class="nav-item"><a href="/accounts/new" class="nav-link">Sign up</a></li>
+            <li class="nav-item"><a href="/accounts/login" class="nav-link login-link">Login</a></li>
+            <li class="nav-item"><a href="/accounts/new" class="nav-link signup-link">Sign up</a></li>
         {{end}}
     </ul>
 </header>

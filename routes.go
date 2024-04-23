@@ -282,7 +282,10 @@ func showMsgFullHandler(sessions *sessions.CookieStore, store storage.MessageSto
 			return
 		}
 		csrf := r.PostForm.Get("_csrf")
-		if csrf == "" || csrf != sess.Values[SESS_CSRF_KEY] {
+		csrfReal := sess.Values[SESS_CSRF_KEY].(string)
+		slog.LogAttrs(r.Context(), slog.LevelDebug, "csrf token in the session", slog.String("csrf", csrfReal))
+		slog.LogAttrs(r.Context(), slog.LevelDebug, "csrf token in the post form", slog.String("csrf", csrf))
+		if csrf == "" || csrf != csrfReal {
 			slog.LogAttrs(r.Context(), slog.LevelError, "invalid csrf token")
 			sendError(r.Context(), sess, w, "failed to get a message", nil)
 			return
@@ -321,6 +324,7 @@ func newAppMiddleware(sessions *sessions.CookieStore, users storage.UserStore) f
 					return
 				}
 				sess.Values[SESS_CSRF_KEY] = t
+				slog.LogAttrs(r.Context(), slog.LevelDebug, "csrf token generated", slog.String("csrf", t))
 			}
 
 			// check if user is set, if yes then add it to context

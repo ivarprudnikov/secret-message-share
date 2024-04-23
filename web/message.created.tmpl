@@ -11,15 +11,15 @@
           
           <div class="card text-center">
             <div class="card-body">
-              <h5 class="card-title">Mesage securely stored!</h5>
+              <h5 class="card-title">Message securely stored!</h5>
               <h6 class="card-subtitle mb-2 text-body-secondary">Now, write down the PIN!</h6>
               <p class="card-text">
                 This is the only time you will see the generated PIN. The PIN will decrypt the message:
               </p>
-              <p class="fw-bold text-center fs-2">
+              <p class="fw-bold text-center fs-2 message-pin">
                 {{.data.Pin}}
               </p>
-              <a href="/messages/{{ .data.PartitionKey }}" class="card-link">Link to the message</a>
+              <a href="/messages/{{ .data.PartitionKey }}" class="card-link message-link">Link to the message</a>
             </div>
           </div>  
 
