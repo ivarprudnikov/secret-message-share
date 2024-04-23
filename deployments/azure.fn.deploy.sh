@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -euo pipefail
+
 RG="secret-share-northeurope-rg"
 FN_NAME="secret-share"
 # Remove prior versions
