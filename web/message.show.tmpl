@@ -11,7 +11,7 @@
 
           <h1>Secret message</h1>
           <p>ID: {{ .data.PartitionKey }}</p>
-          <p>Created at: {{ .data.Timestamp }}</p>
+          <p>Created at: {{ .data.FormattedDate }}</p>
 
           {{if .data.Pin}}
           <h3>Content</h3>

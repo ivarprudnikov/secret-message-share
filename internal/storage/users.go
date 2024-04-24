@@ -7,14 +7,19 @@ import (
 )
 
 type UserStore interface {
-	AddUser(username string, password string) (User, error)
+	AddUser(username string, password string) (*User, error)
 	GetUser(username string) (*User, error)
 	GetUserWithPass(username string, password string) (*User, error)
 }
 
 type User struct {
 	aztables.Entity
-	Password string    `json:"password"`
+	Password string `json:"password"`
+}
+
+func (u *User) FormattedDate() string {
+	t := time.Time(u.Timestamp)
+	return t.Format(time.RFC822)
 }
 
 func NewUser(username string, password string) (User, error) {

@@ -43,11 +43,11 @@ func (s *memMessageStore) Decrypt(ciphertext string, pass string) (string, error
 	return plaintext, nil
 }
 
-func (s *memMessageStore) ListMessages(username string) ([]storage.Message, error) {
-	var msgs []storage.Message
+func (s *memMessageStore) ListMessages(username string) ([]*storage.Message, error) {
+	var msgs []*storage.Message
 	s.messages.Range(func(k, v any) bool {
 		if msg, ok := v.(storage.Message); ok && msg.RowKey == username {
-			msgs = append(msgs, msg)
+			msgs = append(msgs, &msg)
 		}
 		return true
 	})
@@ -55,25 +55,25 @@ func (s *memMessageStore) ListMessages(username string) ([]storage.Message, erro
 }
 
 // TODO: allow to reset the pin for the owner
-func (s *memMessageStore) AddMessage(text string, username string) (storage.Message, error) {
+func (s *memMessageStore) AddMessage(text string, username string) (*storage.Message, error) {
 	// an easy to enter pin
 	pin, err := storage.MakePin()
 	if err != nil {
-		return storage.Message{}, err
+		return nil, err
 	}
 	ciphertext, err := s.Encrypt(text, pin)
 	if err != nil {
-		return storage.Message{}, err
+		return nil, err
 	}
 	msg, err := storage.NewMessage(username, ciphertext, pin)
 	if err != nil {
-		return storage.Message{}, err
+		return nil, err
 	}
 	// store unreadbale message, pin
 	s.messages.Store(msg.Entity.PartitionKey, msg)
 	// temporarily show the pin to the creator
 	msg.Pin = pin
-	return msg, nil
+	return &msg, nil
 }
 
 func (s *memMessageStore) GetMessage(id string) (*storage.Message, error) {

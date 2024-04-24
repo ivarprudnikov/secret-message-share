@@ -16,16 +16,16 @@ func NewMemUserStore(salt string) storage.UserStore {
 	return &memUserStore{users: sync.Map{}, salt: salt}
 }
 
-func (u *memUserStore) AddUser(username string, password string) (storage.User, error) {
+func (u *memUserStore) AddUser(username string, password string) (*storage.User, error) {
 	if _, ok := u.users.Load(username); ok {
-		return storage.User{}, errors.New("username is not available")
+		return nil, errors.New("username is not available")
 	}
 	usr, err := storage.NewUser(username, password)
 	if err != nil {
-		return storage.User{}, err
+		return nil, err
 	}
 	u.users.Store(usr.PartitionKey, usr)
-	return usr, nil
+	return &usr, nil
 }
 
 func (u *memUserStore) GetUser(username string) (*storage.User, error) {

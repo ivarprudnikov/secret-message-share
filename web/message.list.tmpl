@@ -19,7 +19,7 @@
         {{range .data}}
           <tr class="message-row">
             <td><a href="/messages/{{ .PartitionKey }}">{{ .PartitionKey }}</a></td>
-            <td>{{ .Timestamp }}</td>
+            <td>{{ .FormattedDate }}</td>
           </tr>
         {{end}}
         

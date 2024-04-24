@@ -9,8 +9,8 @@ import (
 const MAX_PIN_ATTEMPTS = 5
 
 type MessageStore interface {
-	ListMessages(username string) ([]Message, error)
-	AddMessage(text string, username string) (Message, error)
+	ListMessages(username string) ([]*Message, error)
+	AddMessage(text string, username string) (*Message, error)
 	GetMessage(id string) (*Message, error)
 	GetFullMessage(id string, pin string) (*Message, error)
 	Encrypt(text string, pass string) (string, error)
@@ -22,6 +22,11 @@ type Message struct {
 	Content           string `json:"content,omitempty"`
 	Pin               string `json:"pin,omitempty"`
 	AttemptsRemaining int    `json:"remaining,omitempty"`
+}
+
+func (m *Message) FormattedDate() string {
+	t := time.Time(m.Timestamp)
+	return t.Format(time.RFC822)
 }
 
 func NewMessage(username string, ciphertext string, pin string) (Message, error) {
