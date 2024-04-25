@@ -9,6 +9,7 @@ import (
 const MAX_PIN_ATTEMPTS = 5
 
 type MessageStore interface {
+	CountMessages() (int64, error)
 	ListMessages(username string) ([]*Message, error)
 	AddMessage(text string, username string) (*Message, error)
 	GetMessage(id string) (*Message, error)

@@ -20,5 +20,9 @@ describe('stats spec', () => {
     })
 
     cy.contains('h1', 'Stats').should('be.visible')
+
+    cy.contains('li', 'Registered accounts').should('be.visible')
+    cy.contains('li', 'Active messages').should('be.visible')
+
   })
 })

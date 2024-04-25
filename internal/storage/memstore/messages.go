@@ -16,6 +16,15 @@ func NewMemMessageStore(salt string) storage.MessageStore {
 	return &memMessageStore{messages: sync.Map{}, salt: salt}
 }
 
+func (s *memMessageStore) CountMessages() (int64, error) {
+	var count int64
+	s.messages.Range(func(k, v any) bool {
+		count++
+		return true
+	})
+	return count, nil
+}
+
 func (s *memMessageStore) Encrypt(text string, pass string) (string, error) {
 	// derive a key from the pass
 	key, err := storage.StrongKey(pass, s.salt)

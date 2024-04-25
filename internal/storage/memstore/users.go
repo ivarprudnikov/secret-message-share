@@ -16,6 +16,15 @@ func NewMemUserStore(salt string) storage.UserStore {
 	return &memUserStore{users: sync.Map{}, salt: salt}
 }
 
+func (u *memUserStore) CountUsers() (int64, error) {
+	var count int64
+	u.users.Range(func(k, v any) bool {
+		count++
+		return true
+	})
+	return count, nil
+}
+
 func (u *memUserStore) AddUser(username string, password string, permissions []string) (*storage.User, error) {
 	if _, ok := u.users.Load(username); ok {
 		return nil, errors.New("username is not available")

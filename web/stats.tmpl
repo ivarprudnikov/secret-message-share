@@ -7,7 +7,10 @@
     
     <h1>Stats</h1>
 
-    <p>Coming soon ...</p>
+    <ul>
+      <li>Registered accounts: {{ .data.TotalUsers }}</li>
+      <li>Active messages: {{ .data.TotalMessages }}</li>
+    </ul>
 
     {{template "footer.tmpl" .}}
   </div>

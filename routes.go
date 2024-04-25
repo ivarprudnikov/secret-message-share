@@ -57,7 +57,7 @@ func AddRoutes(
 	mux.Handle("GET /messages/new", preReq(hasAuth(createMsgPageHandler(sessions))))
 	mux.Handle("GET /messages/{id}", preReq(showMsgHandler(sessions, messages)))
 	mux.Handle("POST /messages/{id}", preReq(showMsgFullHandler(sessions, messages)))
-	mux.Handle("GET /stats", preReq(hasAuth(hasPermission(storage.PERMISSION_READ_STATS, statsHandler(sessions)))))
+	mux.Handle("GET /stats", preReq(hasAuth(hasPermission(storage.PERMISSION_READ_STATS, statsHandler(sessions, users, messages)))))
 	mux.Handle("GET /", indexPageHandler(sessions))
 }
 
@@ -310,11 +310,24 @@ func showMsgFullHandler(sessions *sessions.CookieStore, store storage.MessageSto
 	}
 }
 
-func statsHandler(sessions *sessions.CookieStore) http.HandlerFunc {
+func statsHandler(sessions *sessions.CookieStore, userStore storage.UserStore, messageStore storage.MessageStore) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		sess, _ := sessions.Get(r, SESS_COOKIE)
+		users, err := userStore.CountUsers()
+		if err != nil {
+			sendError(r.Context(), sess, w, "failed to get a user count", err)
+			return
+		}
+		messages, err := messageStore.CountMessages()
+		if err != nil {
+			sendError(r.Context(), sess, w, "failed to get a message count", err)
+			return
+		}
 		tmpl.ExecuteTemplate(w, "stats.tmpl", map[string]interface{}{
-			VIEW_DATA_KEY: nil,
+			VIEW_DATA_KEY: map[string]int64{
+				"TotalUsers":    users,
+				"TotalMessages": messages,
+			},
 			VIEW_SESS_KEY: sess.Values,
 		})
 	}

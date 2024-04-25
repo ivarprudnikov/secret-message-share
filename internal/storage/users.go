@@ -9,6 +9,7 @@ import (
 const PERMISSION_READ_STATS = "read:stats"
 
 type UserStore interface {
+	CountUsers() (int64, error)
 	AddUser(username string, password string, permissions []string) (*User, error)
 	GetUser(username string) (*User, error)
 	GetUserWithPass(username string, password string) (*User, error)
