@@ -6,15 +6,18 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/data/aztables"
 )
 
+const PERMISSION_READ_STATS = "read:stats"
+
 type UserStore interface {
-	AddUser(username string, password string) (*User, error)
+	AddUser(username string, password string, permissions []string) (*User, error)
 	GetUser(username string) (*User, error)
 	GetUserWithPass(username string, password string) (*User, error)
 }
 
 type User struct {
 	aztables.Entity
-	Password string `json:"password"`
+	Password    string
+	Permissions []string
 }
 
 func (u *User) FormattedDate() string {
@@ -22,7 +25,7 @@ func (u *User) FormattedDate() string {
 	return t.Format(time.RFC822)
 }
 
-func NewUser(username string, password string) (User, error) {
+func NewUser(username string, password string, permissions []string) (User, error) {
 	hashedPass, err := HashPass(password)
 	if err != nil {
 		return User{}, err
@@ -34,6 +37,7 @@ func NewUser(username string, password string) (User, error) {
 			RowKey:       username,
 			Timestamp:    aztables.EDMDateTime(t),
 		},
-		Password: hashedPass,
+		Password:    hashedPass,
+		Permissions: permissions,
 	}, nil
 }

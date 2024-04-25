@@ -19,9 +19,9 @@ type MessageStore interface {
 
 type Message struct {
 	aztables.Entity
-	Content           string `json:"content,omitempty"`
-	Pin               string `json:"pin,omitempty"`
-	AttemptsRemaining int    `json:"remaining,omitempty"`
+	Content           string
+	Pin               string
+	AttemptsRemaining int
 }
 
 func (m *Message) FormattedDate() string {

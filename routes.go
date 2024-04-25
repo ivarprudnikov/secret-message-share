@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"html/template"
 	"log/slog"
+	"slices"
 
 	"errors"
 	"net/http"
@@ -56,6 +57,7 @@ func AddRoutes(
 	mux.Handle("GET /messages/new", preReq(hasAuth(createMsgPageHandler(sessions))))
 	mux.Handle("GET /messages/{id}", preReq(showMsgHandler(sessions, messages)))
 	mux.Handle("POST /messages/{id}", preReq(showMsgFullHandler(sessions, messages)))
+	mux.Handle("GET /stats", preReq(hasAuth(hasPermission(storage.PERMISSION_READ_STATS, statsHandler(sessions)))))
 	mux.Handle("GET /", indexPageHandler(sessions))
 }
 
@@ -179,7 +181,7 @@ func createAccountHandler(sessions *sessions.CookieStore, store storage.UserStor
 			sendError(r.Context(), sess, w, "passwords do not match", nil)
 			return
 		}
-		usr, err := store.AddUser(username, password)
+		usr, err := store.AddUser(username, password, []string{})
 		if err != nil {
 			sendError(r.Context(), sess, w, "failed to create account", err)
 			return
@@ -308,6 +310,16 @@ func showMsgFullHandler(sessions *sessions.CookieStore, store storage.MessageSto
 	}
 }
 
+func statsHandler(sessions *sessions.CookieStore) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		sess, _ := sessions.Get(r, SESS_COOKIE)
+		tmpl.ExecuteTemplate(w, "stats.tmpl", map[string]interface{}{
+			VIEW_DATA_KEY: nil,
+			VIEW_SESS_KEY: sess.Values,
+		})
+	}
+}
+
 // adds CSRF token to the session of the get requests
 // adds user to the context if session exists
 func newAppMiddleware(sessions *sessions.CookieStore, users storage.UserStore) func(h http.Handler) http.Handler {
@@ -338,6 +350,7 @@ func newAppMiddleware(sessions *sessions.CookieStore, users storage.UserStore) f
 				if err != nil || user == nil {
 					sess.Values[SESS_USER_KEY] = nil
 				} else {
+					slog.LogAttrs(ctx, slog.LevelInfo, "setting session user in context", slog.String("username", username))
 					*r = *r.WithContext(context.WithValue(ctx, userKey, user))
 				}
 			}
@@ -357,11 +370,35 @@ func hasAuth(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var ctx = r.Context()
 		user := ctx.Value(userKey)
-		if user == nil {
+		u, ok := user.(*storage.User)
+		if user == nil || !ok {
 			slog.LogAttrs(ctx, slog.LevelInfo, "user not set, redirecting to login", slog.String("path", r.URL.Path))
 			http.Redirect(w, r, fmt.Sprintf("/accounts/login?uri=%s", r.URL.Path), http.StatusSeeOther)
 			return
 		}
+		slog.LogAttrs(ctx, slog.LevelInfo, "user authenticated", slog.String("username", u.PartitionKey), slog.String("path", r.URL.Path))
+		h.ServeHTTP(w, r)
+	})
+}
+
+func hasPermission(permission string, h http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var ctx = r.Context()
+		user := ctx.Value(userKey)
+		u, ok := user.(*storage.User)
+		if !ok {
+			slog.LogAttrs(ctx, slog.LevelInfo, "user unauthorized", slog.String("path", r.URL.Path))
+			w.WriteHeader(http.StatusUnauthorized)
+			tmpl.ExecuteTemplate(w, "401.tmpl", nil)
+			return
+		}
+		if !slices.Contains(u.Permissions, permission) {
+			slog.LogAttrs(ctx, slog.LevelInfo, "access forbidden", slog.String("username", u.PartitionKey), slog.String("path", r.URL.Path))
+			w.WriteHeader(http.StatusForbidden)
+			tmpl.ExecuteTemplate(w, "403.tmpl", nil)
+			return
+		}
+		slog.LogAttrs(ctx, slog.LevelInfo, "user has access", slog.String("username", u.PartitionKey), slog.String("permission", permission), slog.String("path", r.URL.Path))
 		h.ServeHTTP(w, r)
 	})
 }

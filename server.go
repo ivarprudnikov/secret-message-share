@@ -57,8 +57,10 @@ func getStorageImplementation(config *configuration.ConfigReader) (storage.Messa
 	users := memstore.NewMemUserStore(config.GetSalt())
 	if !config.IsProd() {
 		// add test users
-		users.AddUser("joe", "joe")
-		users.AddUser("alice", "alice")
+		users.AddUser("joe", "joe", []string{})
+		users.AddUser("alice", "alice", []string{})
+		users.AddUser("admin", "admin", []string{storage.PERMISSION_READ_STATS})
+
 		// add a test message
 		msg, err := messages.AddMessage("foobar", "joe")
 		if err != nil {

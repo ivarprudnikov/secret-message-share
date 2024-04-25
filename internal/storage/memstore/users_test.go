@@ -3,6 +3,7 @@ package memstore_test
 import (
 	"testing"
 
+	"github.com/ivarprudnikov/secretshare/internal/storage"
 	"github.com/ivarprudnikov/secretshare/internal/storage/memstore"
 )
 
@@ -14,7 +15,7 @@ func TestUserStore_GetUserWithPass(t *testing.T) {
 	username := "testuser"
 	password := "testpassword"
 
-	store.AddUser(username, password)
+	store.AddUser(username, password, []string{storage.PERMISSION_READ_STATS})
 
 	// Test case 1: Valid username and password
 	foundUser, err := store.GetUserWithPass(username, password)

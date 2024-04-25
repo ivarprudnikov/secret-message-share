@@ -12,6 +12,13 @@ Cypress.Commands.add('loginAlice', () => {
     cy.get('.btn-primary').click()
     cy.contains('footer', 'User: alice').should('be.visible')
 })
+Cypress.Commands.add('loginAdmin', () => {
+    cy.visit('/accounts/login')
+    cy.get('#username').type('admin')
+    cy.get('#password').type('admin')
+    cy.get('.btn-primary').click()
+    cy.contains('footer', 'User: admin').should('be.visible')
+})
 Cypress.Commands.add('logout', () => {
     cy.get('.logout-link').click()
     cy.contains('footer', 'User:').should('not.exist')
