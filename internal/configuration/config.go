@@ -9,6 +9,7 @@ const keyEnvironment = "SERVER_ENV"
 const keySalt = "DB_SALT_KEY"
 const keyCookieAuth = "COOK_AUTH_KEY"
 const keyCookieEnc = "COOK_ENC_KEY"
+const tableStorageAccount = "AZURE_STORAGE_ACCOUNT"
 const tableUsers = "AZTABLE_USERS"
 const tableMessages = "AZTABLE_MESSAGES"
 const envTest = "test"
@@ -36,6 +37,13 @@ func (c *ConfigReader) IsValid() (bool, []string) {
 			invalidVars = append(invalidVars, k)
 		}
 	}
+	if c.IsProd() {
+		for _, k := range []string{tableUsers, tableMessages, tableStorageAccount} {
+			if os.Getenv(k) == "" {
+				invalidVars = append(invalidVars, k)
+			}
+		}
+	}
 	return len(invalidVars) == 0, invalidVars
 }
 
@@ -56,11 +64,15 @@ func (c *ConfigReader) GetCookieEnc() string {
 }
 
 func (c *ConfigReader) GetUsersTableName() string {
-	return c.getKey(tableUsers, true)
+	return os.Getenv(tableUsers)
 }
 
 func (c *ConfigReader) GetMessagesTableName() string {
-	return c.getKey(tableMessages, true)
+	return os.Getenv(tableMessages)
+}
+
+func (c *ConfigReader) GetStorageAccountName() string {
+	return os.Getenv(tableStorageAccount)
 }
 
 // Production environment expects the value to be set in the

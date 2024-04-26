@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"html/template"
 	"log/slog"
-	"slices"
 
 	"errors"
 	"net/http"
@@ -405,7 +404,7 @@ func hasPermission(permission string, h http.Handler) http.Handler {
 			tmpl.ExecuteTemplate(w, "401.tmpl", nil)
 			return
 		}
-		if !slices.Contains(u.Permissions, permission) {
+		if !u.HasPermission(permission) {
 			slog.LogAttrs(ctx, slog.LevelInfo, "access forbidden", slog.String("username", u.PartitionKey), slog.String("path", r.URL.Path))
 			w.WriteHeader(http.StatusForbidden)
 			tmpl.ExecuteTemplate(w, "403.tmpl", nil)

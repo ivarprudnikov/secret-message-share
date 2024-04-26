@@ -55,7 +55,7 @@ func getPort() string {
 // available locally. Locally an in-memory implementation of storage is used.
 func getStorageImplementation(config *configuration.ConfigReader) (storage.MessageStore, storage.UserStore) {
 	var messages storage.MessageStore = memstore.NewMemMessageStore(config.GetSalt())
-	var users storage.UserStore = aztablestore.NewAzUserStore(config.GetUsersTableName(), config.GetSalt())
+	var users storage.UserStore = aztablestore.NewAzUserStore(config.GetStorageAccountName(), config.GetUsersTableName(), config.GetSalt())
 	if !config.IsProd() {
 		messages = memstore.NewMemMessageStore(config.GetSalt())
 		users = memstore.NewMemUserStore(config.GetSalt())

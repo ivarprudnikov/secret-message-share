@@ -1,6 +1,7 @@
 package storage
 
 import (
+	"strings"
 	"time"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/data/aztables"
@@ -18,12 +19,21 @@ type UserStore interface {
 type User struct {
 	aztables.Entity
 	Password    string
-	Permissions []string
+	Permissions string
 }
 
 func (u *User) FormattedDate() string {
 	t := time.Time(u.Timestamp)
 	return t.Format(time.RFC822)
+}
+
+func (u *User) HasPermission(permission string) bool {
+	for _, v := range strings.Split(u.Permissions, ",") {
+		if permission == v {
+			return true
+		}
+	}
+	return false
 }
 
 func NewUser(username string, password string, permissions []string) (User, error) {
@@ -39,6 +49,6 @@ func NewUser(username string, password string, permissions []string) (User, erro
 			Timestamp:    aztables.EDMDateTime(t),
 		},
 		Password:    hashedPass,
-		Permissions: permissions,
+		Permissions: strings.Join(permissions, ","),
 	}, nil
 }
