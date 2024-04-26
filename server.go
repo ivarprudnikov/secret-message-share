@@ -10,6 +10,7 @@ import (
 	"github.com/gorilla/sessions"
 	"github.com/ivarprudnikov/secretshare/internal/configuration"
 	"github.com/ivarprudnikov/secretshare/internal/storage"
+	"github.com/ivarprudnikov/secretshare/internal/storage/aztablestore"
 	"github.com/ivarprudnikov/secretshare/internal/storage/memstore"
 )
 
@@ -53,9 +54,12 @@ func getPort() string {
 // Production environment needs to work with Azure Table Storage which is not
 // available locally. Locally an in-memory implementation of storage is used.
 func getStorageImplementation(config *configuration.ConfigReader) (storage.MessageStore, storage.UserStore) {
-	messages := memstore.NewMemMessageStore(config.GetSalt())
-	users := memstore.NewMemUserStore(config.GetSalt())
+	var messages storage.MessageStore = memstore.NewMemMessageStore(config.GetSalt())
+	var users storage.UserStore = aztablestore.NewAzUserStore(config.GetUsersTableName(), config.GetSalt())
 	if !config.IsProd() {
+		messages = memstore.NewMemMessageStore(config.GetSalt())
+		users = memstore.NewMemUserStore(config.GetSalt())
+
 		// add test users
 		users.AddUser("joe", "joe", []string{})
 		users.AddUser("alice", "alice", []string{})

@@ -9,6 +9,8 @@ const keyEnvironment = "SERVER_ENV"
 const keySalt = "DB_SALT_KEY"
 const keyCookieAuth = "COOK_AUTH_KEY"
 const keyCookieEnc = "COOK_ENC_KEY"
+const tableUsers = "AZTABLE_USERS"
+const tableMessages = "AZTABLE_MESSAGES"
 const envTest = "test"
 const testKey = "12345678123456781234567812345678"
 const requiredKeyLen = 32
@@ -51,6 +53,14 @@ func (c *ConfigReader) GetCookieAuth() string {
 
 func (c *ConfigReader) GetCookieEnc() string {
 	return c.getKey(keyCookieEnc, true)
+}
+
+func (c *ConfigReader) GetUsersTableName() string {
+	return c.getKey(tableUsers, true)
+}
+
+func (c *ConfigReader) GetMessagesTableName() string {
+	return c.getKey(tableMessages, true)
 }
 
 // Production environment expects the value to be set in the
