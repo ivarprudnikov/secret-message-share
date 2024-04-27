@@ -10,6 +10,7 @@
         <h3>Login</h3>
         <form id="login" class="my-4" name="login" action="/accounts/login" method="POST">
           <input type="hidden" name="_csrf" value="{{ .session.csrf }}" />
+          <input type="hidden" name="failedPath" value="{{ .failedPath }}" />
           <div class="mb-3">
             <label for="username" class="form-label">Username</label>
             <input type="text" name="username" class="form-control" id="username" placeholder="doejoe" />

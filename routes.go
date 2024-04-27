@@ -9,6 +9,7 @@ import (
 
 	"errors"
 	"net/http"
+	"net/url"
 
 	"github.com/gorilla/sessions"
 	"github.com/ivarprudnikov/secretshare/internal/crypto"
@@ -22,6 +23,7 @@ const SESS_USER_KEY = "user"
 const VIEW_SESS_KEY = "session"
 const VIEW_DATA_KEY = "data"
 const VIEW_ERROR_KEY = "error"
+const failedPathQueryKey = "failedPath"
 
 // contextKey is the type used to store the user in the context.
 type contextKey int
@@ -82,8 +84,18 @@ func indexPageHandler(sessions *sessions.CookieStore) http.HandlerFunc {
 func loginPageHandler(sessions *sessions.CookieStore) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		sess, _ := sessions.Get(r, SESS_COOKIE)
+		redirectPath := ""
+		failedPath := r.URL.Query().Get(failedPathQueryKey)
+		if failedPath != "" {
+			slog.LogAttrs(r.Context(), slog.LevelInfo, "needs to redirect to protected path")
+			parsedFailedPath, err := url.Parse(failedPath)
+			if err == nil {
+				redirectPath = parsedFailedPath.Path
+			}
+		}
 		tmpl.ExecuteTemplate(w, "account.login.tmpl", map[string]interface{}{
-			VIEW_SESS_KEY: sess.Values,
+			VIEW_SESS_KEY:      sess.Values,
+			failedPathQueryKey: redirectPath,
 		})
 	}
 }
@@ -127,7 +139,19 @@ func loginAccountHandler(sessions *sessions.CookieStore, store storage.UserStore
 			sendError(r.Context(), sess, w, "failed to save session", err)
 			return
 		}
-		http.Redirect(w, r, "/", http.StatusSeeOther)
+
+		redirectPath := "/"
+		failedPath := r.PostForm.Get(failedPathQueryKey)
+		if failedPath != "" {
+			slog.LogAttrs(r.Context(), slog.LevelInfo, "needs to redirect to protected path")
+			parsedFailedPath, err := url.Parse(failedPath)
+			if err == nil {
+				redirectPath = parsedFailedPath.Path
+			}
+		}
+
+		slog.LogAttrs(r.Context(), slog.LevelInfo, "user successfully logged in, redirecting", slog.String("username", username), slog.String("path", redirectPath))
+		http.Redirect(w, r, redirectPath, http.StatusSeeOther)
 	}
 }
 
@@ -333,8 +357,9 @@ func statsHandler(sessions *sessions.CookieStore, userStore storage.UserStore, m
 	}
 }
 
-// adds CSRF token to the session of the get requests
-// adds user to the context if session exists
+// Main app middleware handles the session cookie
+// also, finds and adds the user to the context if the session is valid
+// also, adds a CSRF token to the session of GET requests, to be used in forms
 func newAppMiddleware(sessions *sessions.CookieStore, users storage.UserStore) func(h http.Handler) http.Handler {
 	return func(h http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -379,6 +404,7 @@ func newAppMiddleware(sessions *sessions.CookieStore, users storage.UserStore) f
 	}
 }
 
+// authentication check expects the user to be set when the session cookie was parsed
 func hasAuth(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var ctx = r.Context()
@@ -386,7 +412,7 @@ func hasAuth(h http.Handler) http.Handler {
 		u, ok := user.(*storage.User)
 		if user == nil || !ok {
 			slog.LogAttrs(ctx, slog.LevelInfo, "user not set, redirecting to login", slog.String("path", r.URL.Path))
-			http.Redirect(w, r, fmt.Sprintf("/accounts/login?uri=%s", r.URL.Path), http.StatusSeeOther)
+			http.Redirect(w, r, fmt.Sprintf("/accounts/login?%s=%s", failedPathQueryKey, r.URL.Path), http.StatusSeeOther)
 			return
 		}
 		slog.LogAttrs(ctx, slog.LevelInfo, "user authenticated", slog.String("username", u.PartitionKey), slog.String("path", r.URL.Path))
@@ -394,6 +420,8 @@ func hasAuth(h http.Handler) http.Handler {
 	})
 }
 
+// This ought to be used after the authentication check (hasAuth)
+// Additional check for user here is to avoid unexpected usage
 func hasPermission(permission string, h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var ctx = r.Context()
