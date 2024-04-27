@@ -54,23 +54,30 @@ func getPort() string {
 // Production environment needs to work with Azure Table Storage which is not
 // available locally. Locally an in-memory implementation of storage is used.
 func getStorageImplementation(config *configuration.ConfigReader) (storage.MessageStore, storage.UserStore) {
-	var messages storage.MessageStore = memstore.NewMemMessageStore(config.GetSalt())
-	var users storage.UserStore = aztablestore.NewAzUserStore(config.GetStorageAccountName(), config.GetUsersTableName(), config.GetSalt())
-	if !config.IsProd() {
+	var messages storage.MessageStore
+	var users storage.UserStore
+
+	if config.IsProd() {
+		messages = aztablestore.NewAzMessageStore(config.GetStorageAccountName(), config.GetMessagesTableName(), config.GetSalt())
+		users = aztablestore.NewAzUserStore(config.GetStorageAccountName(), config.GetUsersTableName(), config.GetSalt())
+	} else {
 		messages = memstore.NewMemMessageStore(config.GetSalt())
 		users = memstore.NewMemUserStore(config.GetSalt())
-
-		// add test users
-		users.AddUser("joe", "joe", []string{})
-		users.AddUser("alice", "alice", []string{})
-		users.AddUser("admin", "admin", []string{storage.PERMISSION_READ_STATS})
-
-		// add a test message
-		msg, err := messages.AddMessage("foobar", "joe")
-		if err != nil {
-			panic("Unexpected error")
-		}
-		log.Printf("Generated PIN for test message %s", msg.Pin)
+		bootstrapTestData(messages, users)
 	}
 	return messages, users
+}
+
+func bootstrapTestData(messages storage.MessageStore, users storage.UserStore) {
+	// add test users
+	users.AddUser("joe", "joe", []string{})
+	users.AddUser("alice", "alice", []string{})
+	users.AddUser("admin", "admin", []string{storage.PERMISSION_READ_STATS})
+
+	// add a test message
+	msg, err := messages.AddMessage("foobar", "joe")
+	if err != nil {
+		panic("Unexpected error")
+	}
+	log.Printf("Generated PIN for test message %s", msg.Pin)
 }
