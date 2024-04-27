@@ -170,8 +170,11 @@ func (s *azMessageStore) getMessage(ctx context.Context, id string) (*storage.Me
 	}
 	if len(msgs) > 1 {
 		slog.LogAttrs(ctx, slog.LevelError, "more than one message with the same id", slog.String("id", id), slog.Int("total", len(msgs)))
+		return msgs[0], nil
+	} else if len(msgs) == 1 {
+		return msgs[0], nil
 	}
-	return msgs[0], nil
+	return nil, nil
 }
 
 func (s *azMessageStore) saveMessage(ctx context.Context, msg *storage.Message) error {
