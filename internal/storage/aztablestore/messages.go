@@ -103,6 +103,9 @@ func (s *azMessageStore) GetMessage(ctx context.Context, id string) (*storage.Me
 	if err != nil {
 		return nil, err
 	}
+	if msg == nil {
+		return nil, nil
+	}
 	// clear the pin to let the view know it needs decryption
 	msg.Pin = ""
 	return msg, nil
@@ -112,6 +115,9 @@ func (s *azMessageStore) GetFullMessage(ctx context.Context, id string, pin stri
 	msg, err := s.getMessage(ctx, id)
 	if err != nil {
 		return nil, err
+	}
+	if msg == nil {
+		return nil, nil
 	}
 
 	if err := crypto.CompareHashToPass(msg.Pin, pin); err == nil {
