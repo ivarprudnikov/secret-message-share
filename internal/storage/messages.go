@@ -1,6 +1,7 @@
 package storage
 
 import (
+	"context"
 	"time"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/data/aztables"
@@ -10,11 +11,11 @@ import (
 const MAX_PIN_ATTEMPTS = 5
 
 type MessageStore interface {
-	CountMessages() (int64, error)
-	ListMessages(username string) ([]*Message, error)
-	AddMessage(text string, username string) (*Message, error)
-	GetMessage(id string) (*Message, error)
-	GetFullMessage(id string, pin string) (*Message, error)
+	CountMessages(ctx context.Context) (int64, error)
+	ListMessages(ctx context.Context, username string) ([]*Message, error)
+	AddMessage(ctx context.Context, text string, username string) (*Message, error)
+	GetMessage(ctx context.Context, id string) (*Message, error)
+	GetFullMessage(ctx context.Context, id string, pin string) (*Message, error)
 	Encrypt(text, pass, salt string) (string, error)
 	Decrypt(ciphertext, pass, salt string) (string, error)
 }

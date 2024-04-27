@@ -1,6 +1,7 @@
 package memstore
 
 import (
+	"context"
 	"fmt"
 	"sync"
 
@@ -18,7 +19,7 @@ func NewMemMessageStore(salt string) storage.MessageStore {
 	return &memMessageStore{messages: sync.Map{}, salt: salt}
 }
 
-func (s *memMessageStore) CountMessages() (int64, error) {
+func (s *memMessageStore) CountMessages(ctx context.Context) (int64, error) {
 	var count int64
 	s.messages.Range(func(k, v any) bool {
 		count++
@@ -27,7 +28,7 @@ func (s *memMessageStore) CountMessages() (int64, error) {
 	return count, nil
 }
 
-func (s *memMessageStore) ListMessages(username string) ([]*storage.Message, error) {
+func (s *memMessageStore) ListMessages(ctx context.Context, username string) ([]*storage.Message, error) {
 	var msgs []*storage.Message
 	s.messages.Range(func(k, v any) bool {
 		if msg, ok := v.(storage.Message); ok && msg.RowKey == username {
@@ -39,7 +40,7 @@ func (s *memMessageStore) ListMessages(username string) ([]*storage.Message, err
 }
 
 // TODO: allow to reset the pin for the owner
-func (s *memMessageStore) AddMessage(text string, username string) (*storage.Message, error) {
+func (s *memMessageStore) AddMessage(ctx context.Context, text string, username string) (*storage.Message, error) {
 	// an easy to enter pin
 	pin, err := crypto.MakePin()
 	if err != nil {
@@ -60,7 +61,7 @@ func (s *memMessageStore) AddMessage(text string, username string) (*storage.Mes
 	return &msg, nil
 }
 
-func (s *memMessageStore) GetMessage(id string) (*storage.Message, error) {
+func (s *memMessageStore) GetMessage(ctx context.Context, id string) (*storage.Message, error) {
 	if v, ok := s.messages.Load(id); ok {
 		if msg, ok := v.(storage.Message); ok {
 			// clear the pin to let the view know it needs decryption
@@ -73,7 +74,7 @@ func (s *memMessageStore) GetMessage(id string) (*storage.Message, error) {
 	return nil, nil
 }
 
-func (s *memMessageStore) GetFullMessage(id string, pin string) (*storage.Message, error) {
+func (s *memMessageStore) GetFullMessage(ctx context.Context, id string, pin string) (*storage.Message, error) {
 	if v, ok := s.messages.Load(id); ok {
 		if msg, ok := v.(storage.Message); ok {
 

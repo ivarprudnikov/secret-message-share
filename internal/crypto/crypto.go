@@ -53,7 +53,7 @@ func StrongKey(passText string, saltText string) ([]byte, error) {
 	hkdf := hkdf.New(hashFn, passBytes, saltBytes, nil)
 	key := make([]byte, keySizeBytes)
 	if _, err := io.ReadFull(hkdf, key); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to fill hkdf bytes: %w", err)
 	}
 	return key, nil
 }
@@ -62,7 +62,7 @@ func StrongKey(passText string, saltText string) ([]byte, error) {
 func generateRandomBytes(size uint32) ([]byte, error) {
 	bucket := make([]byte, size)
 	if _, err := rand.Read(bucket); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to fill %d random bytes: %w", size, err)
 	}
 	return bucket, nil
 }

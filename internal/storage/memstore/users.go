@@ -1,6 +1,7 @@
 package memstore
 
 import (
+	"context"
 	"errors"
 	"sync"
 
@@ -17,7 +18,7 @@ func NewMemUserStore(salt string) storage.UserStore {
 	return &memUserStore{users: sync.Map{}, salt: salt}
 }
 
-func (u *memUserStore) CountUsers() (int64, error) {
+func (u *memUserStore) CountUsers(ctx context.Context) (int64, error) {
 	var count int64
 	u.users.Range(func(k, v any) bool {
 		count++
@@ -26,7 +27,7 @@ func (u *memUserStore) CountUsers() (int64, error) {
 	return count, nil
 }
 
-func (u *memUserStore) AddUser(username string, password string, permissions []string) (*storage.User, error) {
+func (u *memUserStore) AddUser(ctx context.Context, username string, password string, permissions []string) (*storage.User, error) {
 	if _, ok := u.users.Load(username); ok {
 		return nil, errors.New("username is not available")
 	}
@@ -38,7 +39,7 @@ func (u *memUserStore) AddUser(username string, password string, permissions []s
 	return &usr, nil
 }
 
-func (u *memUserStore) GetUser(username string) (*storage.User, error) {
+func (u *memUserStore) GetUser(ctx context.Context, username string) (*storage.User, error) {
 	if v, ok := u.users.Load(username); ok {
 		if usr, ok := v.(storage.User); ok {
 			return &usr, nil
@@ -47,7 +48,7 @@ func (u *memUserStore) GetUser(username string) (*storage.User, error) {
 	return nil, nil
 }
 
-func (u *memUserStore) GetUserWithPass(username string, password string) (*storage.User, error) {
+func (u *memUserStore) GetUserWithPass(ctx context.Context, username string, password string) (*storage.User, error) {
 	if v, ok := u.users.Load(username); ok {
 		if usr, ok := v.(storage.User); ok {
 			if err := crypto.CompareHashToPass(usr.Password, password); err == nil {

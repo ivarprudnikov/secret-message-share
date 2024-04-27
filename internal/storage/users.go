@@ -1,6 +1,7 @@
 package storage
 
 import (
+	"context"
 	"strings"
 	"time"
 
@@ -11,10 +12,10 @@ import (
 const PERMISSION_READ_STATS = "read:stats"
 
 type UserStore interface {
-	CountUsers() (int64, error)
-	AddUser(username string, password string, permissions []string) (*User, error)
-	GetUser(username string) (*User, error)
-	GetUserWithPass(username string, password string) (*User, error)
+	CountUsers(ctx context.Context) (int64, error)
+	AddUser(ctx context.Context, username string, password string, permissions []string) (*User, error)
+	GetUser(ctx context.Context, username string) (*User, error)
+	GetUserWithPass(ctx context.Context, username string, password string) (*User, error)
 }
 
 type User struct {

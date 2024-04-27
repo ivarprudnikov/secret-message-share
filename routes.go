@@ -111,7 +111,7 @@ func loginAccountHandler(sessions *sessions.CookieStore, store storage.UserStore
 			sendError(r.Context(), sess, w, "password is empty", nil)
 			return
 		}
-		usr, err := store.GetUserWithPass(username, password)
+		usr, err := store.GetUserWithPass(r.Context(), username, password)
 		if err != nil {
 			sendError(r.Context(), sess, w, "failed to login", err)
 			return
@@ -181,7 +181,7 @@ func createAccountHandler(sessions *sessions.CookieStore, store storage.UserStor
 			sendError(r.Context(), sess, w, "passwords do not match", nil)
 			return
 		}
-		usr, err := store.AddUser(username, password, []string{})
+		usr, err := store.AddUser(r.Context(), username, password, []string{})
 		if err != nil {
 			sendError(r.Context(), sess, w, "failed to create account", err)
 			return
@@ -201,7 +201,7 @@ func listMsgHandler(sessions *sessions.CookieStore, store storage.MessageStore) 
 		}
 		sess, _ := sessions.Get(r, SESS_COOKIE)
 		username := sess.Values[SESS_USER_KEY]
-		messages, err := store.ListMessages(username.(string))
+		messages, err := store.ListMessages(r.Context(), username.(string))
 		if err != nil {
 			sendError(r.Context(), sess, w, "failed to list messages", err)
 			return
@@ -241,7 +241,7 @@ func createMsgHandler(sessions *sessions.CookieStore, store storage.MessageStore
 			return
 		}
 		username := sess.Values[SESS_USER_KEY]
-		msg, err := store.AddMessage(payload, username.(string))
+		msg, err := store.AddMessage(r.Context(), payload, username.(string))
 		if err != nil {
 			sendError(r.Context(), sess, w, "failed to store message", err)
 			return
@@ -256,7 +256,7 @@ func createMsgHandler(sessions *sessions.CookieStore, store storage.MessageStore
 func showMsgHandler(sessions *sessions.CookieStore, store storage.MessageStore) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		id := r.PathValue("id")
-		msg, err := store.GetMessage(id)
+		msg, err := store.GetMessage(r.Context(), id)
 		sess, _ := sessions.Get(r, SESS_COOKIE)
 		if err != nil {
 			sendError(r.Context(), sess, w, "failed to get a message", err)
@@ -298,7 +298,7 @@ func showMsgFullHandler(sessions *sessions.CookieStore, store storage.MessageSto
 			sendError(r.Context(), sess, w, "failed to get a message", nil)
 			return
 		}
-		msg, err := store.GetFullMessage(id, pin)
+		msg, err := store.GetFullMessage(r.Context(), id, pin)
 		if err != nil || msg == nil {
 			sendError(r.Context(), sess, w, "failed to get a message", err)
 			return
@@ -313,12 +313,12 @@ func showMsgFullHandler(sessions *sessions.CookieStore, store storage.MessageSto
 func statsHandler(sessions *sessions.CookieStore, userStore storage.UserStore, messageStore storage.MessageStore) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		sess, _ := sessions.Get(r, SESS_COOKIE)
-		users, err := userStore.CountUsers()
+		users, err := userStore.CountUsers(r.Context())
 		if err != nil {
 			sendError(r.Context(), sess, w, "failed to get a user count", err)
 			return
 		}
-		messages, err := messageStore.CountMessages()
+		messages, err := messageStore.CountMessages(r.Context())
 		if err != nil {
 			sendError(r.Context(), sess, w, "failed to get a message count", err)
 			return
@@ -356,7 +356,7 @@ func newAppMiddleware(sessions *sessions.CookieStore, users storage.UserStore) f
 			_username := sess.Values[SESS_USER_KEY]
 			if username, ok := _username.(string); ok {
 				var ctx = r.Context()
-				user, err := users.GetUser(username)
+				user, err := users.GetUser(r.Context(), username)
 				if err != nil {
 					slog.LogAttrs(ctx, slog.LevelError, "failed to find session user", slog.String("username", username))
 				}

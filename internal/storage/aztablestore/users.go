@@ -29,11 +29,11 @@ func (u *azUserStore) getClient() (*aztables.Client, error) {
 
 // aztables does not have a way to query the size of the table
 // need to scan through all of the records :(
-func (u *azUserStore) CountUsers() (int64, error) {
+func (u *azUserStore) CountUsers(ctx context.Context) (int64, error) {
 	var count int64 = 0
 	client, err := u.getClient()
 	if err != nil {
-		return count, err
+		return count, fmt.Errorf("failed to get aztable client: %w", err)
 	}
 	keySelector := "PartitionKey"
 	metadataFormat := aztables.MetadataFormatNone
@@ -42,17 +42,17 @@ func (u *azUserStore) CountUsers() (int64, error) {
 		Format: &metadataFormat,
 	})
 	for listPager.More() {
-		response, err := listPager.NextPage(context.TODO())
+		response, err := listPager.NextPage(ctx)
 		if err != nil {
-			return count, err
+			return count, fmt.Errorf("next page request failed: %w", err)
 		}
 		count += int64(len(response.Entities))
 	}
 	return count, nil
 }
 
-func (u *azUserStore) AddUser(username string, password string, permissions []string) (*storage.User, error) {
-	existing, err := u.GetUser(username)
+func (u *azUserStore) AddUser(ctx context.Context, username string, password string, permissions []string) (*storage.User, error) {
+	existing, err := u.GetUser(ctx, username)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get user: %w", err)
 	}
@@ -71,7 +71,7 @@ func (u *azUserStore) AddUser(username string, password string, permissions []st
 	if err != nil {
 		return nil, fmt.Errorf("failed to get aztable client: %w", err)
 	}
-	resp, err := client.AddEntity(context.TODO(), marshalled, nil)
+	resp, err := client.AddEntity(ctx, marshalled, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to save user: %w", err)
 	}
@@ -83,18 +83,18 @@ func (u *azUserStore) AddUser(username string, password string, permissions []st
 	return saved, nil
 }
 
-func (u *azUserStore) GetUser(username string) (*storage.User, error) {
+func (u *azUserStore) GetUser(ctx context.Context, username string) (*storage.User, error) {
 	client, err := u.getClient()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to get aztable client: %w", err)
 	}
-	resp, err := client.GetEntity(context.TODO(), username, username, nil)
+	resp, err := client.GetEntity(ctx, username, username, nil)
 	if err != nil {
 		var respErr *azcore.ResponseError
 		if errors.As(err, &respErr) && respErr.StatusCode == http.StatusNotFound {
 			return nil, nil
 		}
-		return nil, err
+		return nil, fmt.Errorf("failed to get user entity: %w", err)
 	}
 	if resp.Value == nil {
 		return nil, nil
@@ -102,23 +102,23 @@ func (u *azUserStore) GetUser(username string) (*storage.User, error) {
 	var user *storage.User
 	err = json.Unmarshal(resp.Value, &user)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to unmarshal user: %w", err)
 	}
 	return user, nil
 }
 
-func (u *azUserStore) GetUserWithPass(username string, password string) (*storage.User, error) {
-	user, err := u.GetUser(username)
+func (u *azUserStore) GetUserWithPass(ctx context.Context, username string, password string) (*storage.User, error) {
+	user, err := u.GetUser(ctx, username)
 	if err != nil {
 		return nil, err
-	}
-	hashedPass := "unknown"
-	if user != nil {
-		hashedPass = user.Password
 	}
 	// even if user is not found evaluate the password
 	// this will reduce the effect on time difference
 	// at the time of the login check
+	hashedPass := "unknown"
+	if user != nil {
+		hashedPass = user.Password
+	}
 	if err := crypto.CompareHashToPass(hashedPass, password); err == nil {
 		return user, nil
 	}

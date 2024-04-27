@@ -1,6 +1,7 @@
 package memstore_test
 
 import (
+	"context"
 	"testing"
 
 	"github.com/ivarprudnikov/secretshare/internal/storage"
@@ -15,10 +16,10 @@ func TestUserStore_GetUserWithPass(t *testing.T) {
 	username := "testuser"
 	password := "testpassword"
 
-	store.AddUser(username, password, []string{storage.PERMISSION_READ_STATS})
+	store.AddUser(context.Background(), username, password, []string{storage.PERMISSION_READ_STATS})
 
 	// Test case 1: Valid username and password
-	foundUser, err := store.GetUserWithPass(username, password)
+	foundUser, err := store.GetUserWithPass(context.Background(), username, password)
 	if err != nil {
 		t.Fatalf("Expected no error, got %v", err)
 	}
@@ -31,7 +32,7 @@ func TestUserStore_GetUserWithPass(t *testing.T) {
 
 	// Test case 2: Invalid password
 	invalidPassword := "wrongpassword"
-	foundUser, err = store.GetUserWithPass(username, invalidPassword)
+	foundUser, err = store.GetUserWithPass(context.Background(), username, invalidPassword)
 	if err != nil {
 		t.Fatalf("Expected no error, got %v", err)
 	}
@@ -41,7 +42,7 @@ func TestUserStore_GetUserWithPass(t *testing.T) {
 
 	// Test case 3: Invalid username
 	invalidUsername := "invaliduser"
-	foundUser, err = store.GetUserWithPass(invalidUsername, password)
+	foundUser, err = store.GetUserWithPass(context.Background(), invalidUsername, password)
 	if err != nil {
 		t.Fatalf("Expected no error, got %v", err)
 	}

@@ -1,6 +1,7 @@
 package memstore_test
 
 import (
+	"context"
 	"testing"
 
 	"github.com/ivarprudnikov/secretshare/internal/storage"
@@ -13,13 +14,13 @@ func TestMessageStore_GetMessage(t *testing.T) {
 
 	// Create a test message
 	content := "testcontent testcontent testcontent testcontent testcontent testcontent"
-	msg, err := store.AddMessage(content, "testuser")
+	msg, err := store.AddMessage(context.Background(), content, "testuser")
 	if err != nil {
 		t.Fatalf("Expected no error, got %v", err)
 	}
 
 	// Invalid id
-	foundMsg, err := store.GetMessage("foobar")
+	foundMsg, err := store.GetMessage(context.Background(), "foobar")
 	if err != nil {
 		t.Fatalf("Expected no error, got %v", err)
 	}
@@ -28,7 +29,7 @@ func TestMessageStore_GetMessage(t *testing.T) {
 	}
 
 	// Get encrypted message
-	foundMsg, err = store.GetMessage(msg.PartitionKey)
+	foundMsg, err = store.GetMessage(context.Background(), msg.PartitionKey)
 	if err != nil {
 		t.Fatalf("Expected no error, got %v", err)
 	}
@@ -49,13 +50,13 @@ func TestMessageStore_GetFullMessage(t *testing.T) {
 
 	// Create a test message
 	content := "testcontent testcontent testcontent testcontent testcontent testcontent"
-	msg, err := store.AddMessage(content, "testuser")
+	msg, err := store.AddMessage(context.Background(), content, "testuser")
 	if err != nil {
 		t.Fatalf("Expected no error, got %v", err)
 	}
 
 	// invalid Pin
-	foundMsg, err := store.GetFullMessage(msg.PartitionKey, "foobar")
+	foundMsg, err := store.GetFullMessage(context.Background(), msg.PartitionKey, "foobar")
 	if err != nil {
 		t.Fatalf("Expected no error, got %v", err)
 	}
@@ -64,7 +65,7 @@ func TestMessageStore_GetFullMessage(t *testing.T) {
 	}
 
 	// Get full message
-	foundMsg, err = store.GetFullMessage(msg.PartitionKey, msg.Pin)
+	foundMsg, err = store.GetFullMessage(context.Background(), msg.PartitionKey, msg.Pin)
 	if err != nil {
 		t.Fatalf("Expected no error, got %v", err)
 	}
@@ -76,7 +77,7 @@ func TestMessageStore_GetFullMessage(t *testing.T) {
 	}
 
 	// Message was deleted after access
-	msgs, err := store.ListMessages("testuser")
+	msgs, err := store.ListMessages(context.Background(), "testuser")
 	if err != nil {
 		t.Fatalf("Expected no error, got %v", err)
 	}
@@ -91,23 +92,23 @@ func TestMessageStore_DeletedAfterFailedAttempts(t *testing.T) {
 
 	// Create a test message
 	content := "testcontent testcontent testcontent testcontent testcontent testcontent"
-	msg, err := store.AddMessage(content, "testuser")
+	msg, err := store.AddMessage(context.Background(), content, "testuser")
 	if err != nil {
 		t.Fatalf("Expected no error, got %v", err)
 	}
 
 	// before, the message exists
-	foundMsg, _ := store.GetMessage(msg.PartitionKey)
+	foundMsg, _ := store.GetMessage(context.Background(), msg.PartitionKey)
 	if foundMsg == nil {
 		t.Fatalf("Expected message to be found, got nil")
 	}
 
 	// invalid Pin
 	for range storage.MAX_PIN_ATTEMPTS {
-		store.GetFullMessage(msg.PartitionKey, "invalidpin")
+		store.GetFullMessage(context.Background(), msg.PartitionKey, "invalidpin")
 	}
 
-	goneMessage, _ := store.GetMessage(msg.PartitionKey)
+	goneMessage, _ := store.GetMessage(context.Background(), msg.PartitionKey)
 	if goneMessage != nil {
 		t.Fatalf("Expected the message to be deleted")
 	}

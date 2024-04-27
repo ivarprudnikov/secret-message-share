@@ -26,11 +26,11 @@ func (s *azMessageStore) getClient() (*aztables.Client, error) {
 	return getTableClient(s.accountName, s.tableName)
 }
 
-func (s *azMessageStore) CountMessages() (int64, error) {
+func (s *azMessageStore) CountMessages(ctx context.Context) (int64, error) {
 	var count int64 = 0
 	client, err := s.getClient()
 	if err != nil {
-		return count, err
+		return count, fmt.Errorf("failed to get aztable client: %w", err)
 	}
 	keySelector := "PartitionKey"
 	metadataFormat := aztables.MetadataFormatNone
@@ -39,35 +39,35 @@ func (s *azMessageStore) CountMessages() (int64, error) {
 		Format: &metadataFormat,
 	})
 	for listPager.More() {
-		response, err := listPager.NextPage(context.TODO())
+		response, err := listPager.NextPage(ctx)
 		if err != nil {
-			return count, err
+			return count, fmt.Errorf("failed to get page of results: %w", err)
 		}
 		count += int64(len(response.Entities))
 	}
 	return count, nil
 }
 
-func (s *azMessageStore) ListMessages(username string) ([]*storage.Message, error) {
+func (s *azMessageStore) ListMessages(ctx context.Context, username string) ([]*storage.Message, error) {
 	var msgs []*storage.Message
 	client, err := s.getClient()
 	if err != nil {
-		return msgs, err
+		return msgs, fmt.Errorf("failed to get aztable client: %w", err)
 	}
 	userFilter := fmt.Sprintf("RowKey eq '%s'", username)
 	listPager := client.NewListEntitiesPager(&aztables.ListEntitiesOptions{
 		Filter: &userFilter,
 	})
 	for listPager.More() {
-		response, err := listPager.NextPage(context.TODO())
+		response, err := listPager.NextPage(ctx)
 		if err != nil {
-			return msgs, err
+			return msgs, fmt.Errorf("failed to get page of results: %w", err)
 		}
 		for _, v := range response.Entities {
 			var msg *storage.Message
 			err = json.Unmarshal(v, &msg)
 			if err != nil {
-				return msgs, err
+				return msgs, fmt.Errorf("failed to unmarshal message in list of results: %w", err)
 			}
 			msgs = append(msgs, msg)
 		}
@@ -76,30 +76,30 @@ func (s *azMessageStore) ListMessages(username string) ([]*storage.Message, erro
 }
 
 // TODO: allow to reset the pin for the owner
-func (s *azMessageStore) AddMessage(text string, username string) (*storage.Message, error) {
+func (s *azMessageStore) AddMessage(ctx context.Context, text string, username string) (*storage.Message, error) {
 	// an easy to enter pin
 	pin, err := crypto.MakePin()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to generate pin: %w", err)
 	}
 	ciphertext, err := s.Encrypt(text, pin, s.salt)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to encrypt text: %w", err)
 	}
 	msg, err := storage.NewMessage(username, ciphertext, pin)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to create a new message: %w", err)
 	}
-	err = s.saveMessage(&msg)
+	err = s.saveMessage(ctx, &msg)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to save message: %w", err)
 	}
 	msg.Pin = pin
 	return &msg, nil
 }
 
-func (s *azMessageStore) GetMessage(id string) (*storage.Message, error) {
-	msg, err := s.getMessage(id)
+func (s *azMessageStore) GetMessage(ctx context.Context, id string) (*storage.Message, error) {
+	msg, err := s.getMessage(ctx, id)
 	if err != nil {
 		return nil, err
 	}
@@ -108,8 +108,8 @@ func (s *azMessageStore) GetMessage(id string) (*storage.Message, error) {
 	return msg, nil
 }
 
-func (s *azMessageStore) GetFullMessage(id string, pin string) (*storage.Message, error) {
-	msg, err := s.getMessage(id)
+func (s *azMessageStore) GetFullMessage(ctx context.Context, id string, pin string) (*storage.Message, error) {
+	msg, err := s.getMessage(ctx, id)
 	if err != nil {
 		return nil, err
 	}
@@ -117,12 +117,12 @@ func (s *azMessageStore) GetFullMessage(id string, pin string) (*storage.Message
 	if err := crypto.CompareHashToPass(msg.Pin, pin); err == nil {
 		text, err := s.Decrypt(msg.Content, pin, s.salt)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("failed to decrypt message content: %w", err)
 		}
 		msg.Content = text
-		err = s.deleteMessage(msg)
+		err = s.deleteMessage(ctx, msg)
 		if err != nil {
-			slog.LogAttrs(context.TODO(), slog.LevelError, "failed to delete message", slog.String("id", msg.PartitionKey), slog.String("username", msg.RowKey))
+			slog.LogAttrs(ctx, slog.LevelError, "failed to delete message", slog.String("id", msg.PartitionKey), slog.String("username", msg.RowKey), slog.Any("error", err))
 		}
 		return msg, nil
 	}
@@ -130,24 +130,24 @@ func (s *azMessageStore) GetFullMessage(id string, pin string) (*storage.Message
 	msg.AttemptsRemaining -= 1
 	// If the pin was wrong then track attempts
 	if msg.AttemptsRemaining <= 0 {
-		err = s.deleteMessage(msg)
+		err = s.deleteMessage(ctx, msg)
 		if err != nil {
-			slog.LogAttrs(context.TODO(), slog.LevelError, "failed to delete message", slog.String("id", msg.PartitionKey), slog.String("username", msg.RowKey))
+			slog.LogAttrs(ctx, slog.LevelError, "failed to delete message", slog.String("id", msg.PartitionKey), slog.String("username", msg.RowKey), slog.Any("error", err))
 		}
 	} else {
-		err = s.saveMessage(msg)
+		err = s.saveMessage(ctx, msg)
 		if err != nil {
-			slog.LogAttrs(context.TODO(), slog.LevelError, "failed to update message", slog.String("id", msg.PartitionKey), slog.String("username", msg.RowKey))
+			slog.LogAttrs(ctx, slog.LevelError, "failed to update message", slog.String("id", msg.PartitionKey), slog.String("username", msg.RowKey), slog.Any("error", err))
 		}
 	}
 
 	return nil, nil
 }
 
-func (s *azMessageStore) getMessage(id string) (*storage.Message, error) {
+func (s *azMessageStore) getMessage(ctx context.Context, id string) (*storage.Message, error) {
 	client, err := s.getClient()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to get aztable client: %w", err)
 	}
 	var msgs []*storage.Message
 	idFilter := fmt.Sprintf("PartitionKey eq '%s'", id)
@@ -155,51 +155,51 @@ func (s *azMessageStore) getMessage(id string) (*storage.Message, error) {
 		Filter: &idFilter,
 	})
 	for listPager.More() {
-		response, err := listPager.NextPage(context.TODO())
+		response, err := listPager.NextPage(ctx)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("failed to get page of results: %w", err)
 		}
 		for _, v := range response.Entities {
 			var msg *storage.Message
 			err = json.Unmarshal(v, &msg)
 			if err != nil {
-				return nil, err
+				return nil, fmt.Errorf("failed to unmarshal message: %w", err)
 			}
 			msgs = append(msgs, msg)
 		}
 	}
 	if len(msgs) > 1 {
-		slog.LogAttrs(context.TODO(), slog.LevelError, "more than one message with the same id", slog.String("id", id), slog.Int("total", len(msgs)))
+		slog.LogAttrs(ctx, slog.LevelError, "more than one message with the same id", slog.String("id", id), slog.Int("total", len(msgs)))
 	}
 	return msgs[0], nil
 }
 
-func (s *azMessageStore) saveMessage(msg *storage.Message) error {
+func (s *azMessageStore) saveMessage(ctx context.Context, msg *storage.Message) error {
 	marshalled, err := json.Marshal(msg)
 	if err != nil {
-		return fmt.Errorf("failed to marshal: %w", err)
+		return fmt.Errorf("failed to marshal message: %w", err)
 	}
 	client, err := s.getClient()
 	if err != nil {
 		return fmt.Errorf("failed to get aztable client: %w", err)
 	}
-	_, err = client.UpsertEntity(context.TODO(), marshalled, &aztables.UpsertEntityOptions{
+	_, err = client.UpsertEntity(ctx, marshalled, &aztables.UpsertEntityOptions{
 		UpdateMode: aztables.UpdateModeReplace,
 	})
 	if err != nil {
-		return fmt.Errorf("failed to save: %w", err)
+		return fmt.Errorf("failed to upsert message entity: %w", err)
 	}
 	return nil
 }
 
-func (s *azMessageStore) deleteMessage(msg *storage.Message) error {
+func (s *azMessageStore) deleteMessage(ctx context.Context, msg *storage.Message) error {
 	client, err := s.getClient()
 	if err != nil {
 		return fmt.Errorf("failed to get aztable client: %w", err)
 	}
-	_, err = client.DeleteEntity(context.TODO(), msg.PartitionKey, msg.RowKey, nil)
+	_, err = client.DeleteEntity(ctx, msg.PartitionKey, msg.RowKey, nil)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to delete message entity: %w", err)
 	}
 	return nil
 }

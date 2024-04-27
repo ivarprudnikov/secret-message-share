@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	_ "embed"
 	"log"
 	"log/slog"
@@ -70,12 +71,12 @@ func getStorageImplementation(config *configuration.ConfigReader) (storage.Messa
 
 func bootstrapTestData(messages storage.MessageStore, users storage.UserStore) {
 	// add test users
-	users.AddUser("joe", "joe", []string{})
-	users.AddUser("alice", "alice", []string{})
-	users.AddUser("admin", "admin", []string{storage.PERMISSION_READ_STATS})
+	users.AddUser(context.Background(), "joe", "joe", []string{})
+	users.AddUser(context.Background(), "alice", "alice", []string{})
+	users.AddUser(context.Background(), "admin", "admin", []string{storage.PERMISSION_READ_STATS})
 
 	// add a test message
-	msg, err := messages.AddMessage("foobar", "joe")
+	msg, err := messages.AddMessage(context.Background(), "foobar", "joe")
 	if err != nil {
 		panic("Unexpected error")
 	}
