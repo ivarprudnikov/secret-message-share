@@ -33,6 +33,7 @@ sequenceDiagram
 - Install Node to run e2e tests: https://nodejs.org/en/download/
 - Install Azure Functions Core Tools if you will run the local in Azure functions environment: https://learn.microsoft.com/en-us/azure/azure-functions/functions-run-local
 - Access to Azure if you will create/update/deploy function app: https://portal.azure.com
+  - Azure CLI is used when deploying the [resources](./deployments/), use v2.56.0 as the newer one cannot deploy the function
 
 **Commands**
 
