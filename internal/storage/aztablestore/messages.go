@@ -7,10 +7,12 @@ import (
 	"log/slog"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/data/aztables"
+	"github.com/ivarprudnikov/secretshare/internal/crypto"
 	"github.com/ivarprudnikov/secretshare/internal/storage"
 )
 
 type azMessageStore struct {
+	crypto.EntityEncryptHelper
 	accountName string
 	tableName   string
 	salt        string
@@ -46,34 +48,6 @@ func (s *azMessageStore) CountMessages() (int64, error) {
 	return count, nil
 }
 
-// TODO move to storage
-func (s *azMessageStore) Encrypt(text string, pass string) (string, error) {
-	// derive a key from the pass
-	key, err := storage.StrongKey(pass, s.salt)
-	if err != nil {
-		return "", err
-	}
-	ciphertext, err := storage.EncryptAES(key, text)
-	if err != nil {
-		return "", err
-	}
-	return ciphertext, nil
-}
-
-// Decrypt cipher text with a given PIN which will be used to derive a key
-func (s *azMessageStore) Decrypt(ciphertext string, pass string) (string, error) {
-	// derive a key from the pass
-	key, err := storage.StrongKey(pass, s.salt)
-	if err != nil {
-		return "", err
-	}
-	plaintext, err := storage.DecryptAES(key, ciphertext)
-	if err != nil {
-		return "", err
-	}
-	return plaintext, nil
-}
-
 func (s *azMessageStore) ListMessages(username string) ([]*storage.Message, error) {
 	var msgs []*storage.Message
 	client, err := s.getClient()
@@ -104,11 +78,11 @@ func (s *azMessageStore) ListMessages(username string) ([]*storage.Message, erro
 // TODO: allow to reset the pin for the owner
 func (s *azMessageStore) AddMessage(text string, username string) (*storage.Message, error) {
 	// an easy to enter pin
-	pin, err := storage.MakePin()
+	pin, err := crypto.MakePin()
 	if err != nil {
 		return nil, err
 	}
-	ciphertext, err := s.Encrypt(text, pin)
+	ciphertext, err := s.Encrypt(text, pin, s.salt)
 	if err != nil {
 		return nil, err
 	}
@@ -117,6 +91,9 @@ func (s *azMessageStore) AddMessage(text string, username string) (*storage.Mess
 		return nil, err
 	}
 	err = s.saveMessage(&msg)
+	if err != nil {
+		return nil, err
+	}
 	msg.Pin = pin
 	return &msg, nil
 }
@@ -137,8 +114,8 @@ func (s *azMessageStore) GetFullMessage(id string, pin string) (*storage.Message
 		return nil, err
 	}
 
-	if err := storage.CompareHashToPass(msg.Pin, pin); err == nil {
-		text, err := s.Decrypt(msg.Content, pin)
+	if err := crypto.CompareHashToPass(msg.Pin, pin); err == nil {
+		text, err := s.Decrypt(msg.Content, pin, s.salt)
 		if err != nil {
 			return nil, err
 		}

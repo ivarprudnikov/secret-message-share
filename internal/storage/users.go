@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/data/aztables"
+	"github.com/ivarprudnikov/secretshare/internal/crypto"
 )
 
 const PERMISSION_READ_STATS = "read:stats"
@@ -37,7 +38,7 @@ func (u *User) HasPermission(permission string) bool {
 }
 
 func NewUser(username string, password string, permissions []string) (User, error) {
-	hashedPass, err := HashPass(password)
+	hashedPass, err := crypto.HashPass(password)
 	if err != nil {
 		return User{}, err
 	}

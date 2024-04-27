@@ -11,6 +11,7 @@ import (
 	"net/http"
 
 	"github.com/gorilla/sessions"
+	"github.com/ivarprudnikov/secretshare/internal/crypto"
 	"github.com/ivarprudnikov/secretshare/internal/storage"
 )
 
@@ -342,7 +343,7 @@ func newAppMiddleware(sessions *sessions.CookieStore, users storage.UserStore) f
 
 			if r.Method == "GET" {
 				// setup CSRF token for pages
-				t, err := storage.MakeToken()
+				t, err := crypto.MakeToken()
 				if err != nil {
 					sendError(r.Context(), sess, w, "failed to setup csrf", err)
 					return

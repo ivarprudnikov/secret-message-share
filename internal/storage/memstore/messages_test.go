@@ -115,15 +115,16 @@ func TestMessageStore_DeletedAfterFailedAttempts(t *testing.T) {
 
 func TestMessageStore_EncryptDecrypt(t *testing.T) {
 	// Create a new MessageStore instance
-	store := memstore.NewMemMessageStore("12345678123456781234567812345678")
+	salt := "12345678123456781234567812345678"
+	store := memstore.NewMemMessageStore(salt)
 
 	message := "abc"
 	key := "pass"
-	ciphertext, err := store.Encrypt(message, key)
+	ciphertext, err := store.Encrypt(message, key, salt)
 	if err != nil {
 		t.Fatalf("Expected no error, got %v", err)
 	}
-	plaintext, err := store.Decrypt(ciphertext, key)
+	plaintext, err := store.Decrypt(ciphertext, key, salt)
 	if err != nil {
 		t.Fatalf("Expected no error, got %v", err)
 	}

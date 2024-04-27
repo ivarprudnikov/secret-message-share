@@ -56,6 +56,6 @@ describe('auth spec', () => {
     cy.get('#password').type('joe')
     cy.get('#password2').type('joe')
     cy.get('.btn-primary').click()
-    cy.contains('username is not available').should('be.visible')
+    cy.contains('failed to create account').should('be.visible')
   })
 })

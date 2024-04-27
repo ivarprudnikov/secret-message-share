@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/data/aztables"
+	"github.com/ivarprudnikov/secretshare/internal/crypto"
 )
 
 const MAX_PIN_ATTEMPTS = 5
@@ -14,8 +15,8 @@ type MessageStore interface {
 	AddMessage(text string, username string) (*Message, error)
 	GetMessage(id string) (*Message, error)
 	GetFullMessage(id string, pin string) (*Message, error)
-	Encrypt(text string, pass string) (string, error)
-	Decrypt(ciphertext string, pass string) (string, error)
+	Encrypt(text, pass, salt string) (string, error)
+	Decrypt(ciphertext, pass, salt string) (string, error)
 }
 
 type Message struct {
@@ -31,14 +32,14 @@ func (m *Message) FormattedDate() string {
 }
 
 func NewMessage(username string, ciphertext string, pin string) (Message, error) {
-	pinHash, err := HashPass(pin)
+	pinHash, err := crypto.HashPass(pin)
 	if err != nil {
 		return Message{}, err
 	}
 	t := time.Now()
 	return Message{
 		Entity: aztables.Entity{
-			PartitionKey: HashText(ciphertext),
+			PartitionKey: crypto.HashText(ciphertext),
 			RowKey:       username,
 			Timestamp:    aztables.EDMDateTime(t),
 		},

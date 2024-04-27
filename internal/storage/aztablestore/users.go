@@ -9,6 +9,7 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	"github.com/Azure/azure-sdk-for-go/sdk/data/aztables"
+	"github.com/ivarprudnikov/secretshare/internal/crypto"
 	"github.com/ivarprudnikov/secretshare/internal/storage"
 )
 
@@ -118,7 +119,7 @@ func (u *azUserStore) GetUserWithPass(username string, password string) (*storag
 	// even if user is not found evaluate the password
 	// this will reduce the effect on time difference
 	// at the time of the login check
-	if err := storage.CompareHashToPass(hashedPass, password); err == nil {
+	if err := crypto.CompareHashToPass(hashedPass, password); err == nil {
 		return user, nil
 	}
 	return nil, nil

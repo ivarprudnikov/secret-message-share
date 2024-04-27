@@ -1,4 +1,4 @@
-package storage_test
+package crypto_test
 
 import (
 	"regexp"
@@ -6,11 +6,11 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ivarprudnikov/secretshare/internal/storage"
+	"github.com/ivarprudnikov/secretshare/internal/crypto"
 )
 
 func TestHash_MakePin(t *testing.T) {
-	pin, err := storage.MakePin()
+	pin, err := crypto.MakePin()
 	if err != nil {
 		t.Fatalf("Expected no error, got %v", err)
 	}
@@ -25,12 +25,12 @@ func TestHash_MakePin(t *testing.T) {
 
 func TestHash_StrongKey(t *testing.T) {
 	salt := "12345678901234567890123456789012"
-	key1, err := storage.StrongKey("1234", salt)
+	key1, err := crypto.StrongKey("1234", salt)
 	if err != nil {
 		t.Fatalf("Expected no error, got %v", err)
 	}
 
-	key2, err := storage.StrongKey("1234", salt)
+	key2, err := crypto.StrongKey("1234", salt)
 	if err != nil {
 		t.Fatalf("Expected no error, got %v", err)
 	}
@@ -42,14 +42,14 @@ func TestHash_StrongKey(t *testing.T) {
 
 func TestHash_EncryptDecrypt(t *testing.T) {
 	key := []byte("1234567890123456")
-	cipher, err := storage.EncryptAES(key, "abc")
+	cipher, err := crypto.EncryptAES(key, "abc")
 	if err != nil {
 		t.Fatalf("Expected no error, got %v", err)
 	}
 	if cipher == "abc" {
 		t.Fatal("ciphertext should not be the same as input")
 	}
-	plaintext, err := storage.DecryptAES(key, cipher)
+	plaintext, err := crypto.DecryptAES(key, cipher)
 	if err != nil {
 		t.Fatalf("Expected no error, got %v", err)
 	}
@@ -59,14 +59,14 @@ func TestHash_EncryptDecrypt(t *testing.T) {
 }
 
 func TestHash_HashText(t *testing.T) {
-	digest := storage.HashText("foobar")
+	digest := crypto.HashText("foobar")
 	if digest != "c3ab8ff13720e8ad9047dd39466b3c8974e592c2fa383d4a3960714caef0c4f2" {
 		t.Fatalf("unexpected digest %s", digest)
 	}
 }
 
 func TestHash_HashPass_ThenCompare(t *testing.T) {
-	hashed, err := storage.HashPass("foobar")
+	hashed, err := crypto.HashPass("foobar")
 	if err != nil {
 		t.Fatalf("Expected no error, got %v", err)
 	}
@@ -74,7 +74,7 @@ func TestHash_HashPass_ThenCompare(t *testing.T) {
 		t.Fatalf("unexpected value %s", hashed)
 	}
 
-	err = storage.CompareHashToPass(hashed, "foobar")
+	err = crypto.CompareHashToPass(hashed, "foobar")
 	if err != nil {
 		t.Fatalf("Expected no error, got %v", err)
 	}

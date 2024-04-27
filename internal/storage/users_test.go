@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"testing"
 
+	"github.com/ivarprudnikov/secretshare/internal/crypto"
 	"github.com/ivarprudnikov/secretshare/internal/storage"
 )
 
@@ -30,7 +31,7 @@ func TestUser(t *testing.T) {
 	if user.Permissions != "baz,bau" {
 		t.Fatalf("Unexpected output %v", user.Permissions)
 	}
-	err = storage.CompareHashToPass(user.Password, "bar")
+	err = crypto.CompareHashToPass(user.Password, "bar")
 	if err != nil {
 		t.Fatalf("Unexpected error %v", err)
 	}

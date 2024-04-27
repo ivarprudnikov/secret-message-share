@@ -4,6 +4,7 @@ import (
 	"errors"
 	"sync"
 
+	"github.com/ivarprudnikov/secretshare/internal/crypto"
 	"github.com/ivarprudnikov/secretshare/internal/storage"
 )
 
@@ -49,7 +50,7 @@ func (u *memUserStore) GetUser(username string) (*storage.User, error) {
 func (u *memUserStore) GetUserWithPass(username string, password string) (*storage.User, error) {
 	if v, ok := u.users.Load(username); ok {
 		if usr, ok := v.(storage.User); ok {
-			if err := storage.CompareHashToPass(usr.Password, password); err == nil {
+			if err := crypto.CompareHashToPass(usr.Password, password); err == nil {
 				return &usr, nil
 			}
 		}

@@ -4,10 +4,12 @@ import (
 	"fmt"
 	"sync"
 
+	"github.com/ivarprudnikov/secretshare/internal/crypto"
 	"github.com/ivarprudnikov/secretshare/internal/storage"
 )
 
 type memMessageStore struct {
+	crypto.EntityEncryptHelper
 	messages sync.Map
 	salt     string
 }
@@ -25,33 +27,6 @@ func (s *memMessageStore) CountMessages() (int64, error) {
 	return count, nil
 }
 
-func (s *memMessageStore) Encrypt(text string, pass string) (string, error) {
-	// derive a key from the pass
-	key, err := storage.StrongKey(pass, s.salt)
-	if err != nil {
-		return "", err
-	}
-	ciphertext, err := storage.EncryptAES(key, text)
-	if err != nil {
-		return "", err
-	}
-	return ciphertext, nil
-}
-
-// Decrypt cipher text with a given PIN which will be used to derive a key
-func (s *memMessageStore) Decrypt(ciphertext string, pass string) (string, error) {
-	// derive a key from the pass
-	key, err := storage.StrongKey(pass, s.salt)
-	if err != nil {
-		return "", err
-	}
-	plaintext, err := storage.DecryptAES(key, ciphertext)
-	if err != nil {
-		return "", err
-	}
-	return plaintext, nil
-}
-
 func (s *memMessageStore) ListMessages(username string) ([]*storage.Message, error) {
 	var msgs []*storage.Message
 	s.messages.Range(func(k, v any) bool {
@@ -66,11 +41,11 @@ func (s *memMessageStore) ListMessages(username string) ([]*storage.Message, err
 // TODO: allow to reset the pin for the owner
 func (s *memMessageStore) AddMessage(text string, username string) (*storage.Message, error) {
 	// an easy to enter pin
-	pin, err := storage.MakePin()
+	pin, err := crypto.MakePin()
 	if err != nil {
 		return nil, err
 	}
-	ciphertext, err := s.Encrypt(text, pin)
+	ciphertext, err := s.Encrypt(text, pin, s.salt)
 	if err != nil {
 		return nil, err
 	}
@@ -102,9 +77,9 @@ func (s *memMessageStore) GetFullMessage(id string, pin string) (*storage.Messag
 	if v, ok := s.messages.Load(id); ok {
 		if msg, ok := v.(storage.Message); ok {
 
-			if err := storage.CompareHashToPass(msg.Pin, pin); err == nil {
+			if err := crypto.CompareHashToPass(msg.Pin, pin); err == nil {
 
-				text, err := s.Decrypt(msg.Content, pin)
+				text, err := s.Decrypt(msg.Content, pin, s.salt)
 				if err != nil {
 					return nil, err
 				}
