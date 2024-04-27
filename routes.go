@@ -428,7 +428,6 @@ func sendError(ctx context.Context, sess *sessions.Session, w http.ResponseWrite
 	slog.LogAttrs(ctx, slog.LevelError, "request processing failed", slog.String("message", message), slog.Any("error", err))
 	apiError := ApiError{
 		Message: message,
-		Error:   err.Error(),
 	}
 	w.WriteHeader(http.StatusBadRequest)
 	tmpl.ExecuteTemplate(w, "400.tmpl", map[string]interface{}{
