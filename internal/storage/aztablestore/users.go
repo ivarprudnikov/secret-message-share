@@ -34,7 +34,7 @@ func (u *azUserStore) CountUsers() (int64, error) {
 	if err != nil {
 		return count, err
 	}
-	keySelector := "$select=PartitionKey"
+	keySelector := "PartitionKey"
 	metadataFormat := aztables.MetadataFormatNone
 	listPager := client.NewListEntitiesPager(&aztables.ListEntitiesOptions{
 		Select: &keySelector,
