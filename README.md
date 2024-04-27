@@ -97,7 +97,6 @@ See [SECURITY.md](SECURITY.md) for more details about the steps taken to ecure t
 
 - Increase the size of the keys
 - Add rate limiting
-- Implement Azure Table Storage
 - Add backups
 
 ## References
