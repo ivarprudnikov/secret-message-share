@@ -3,7 +3,7 @@ describe('stats spec', () => {
     cy.visit('/stats', {
       failOnStatusCode: false,
     })
-    cy.url().should('contain', '/accounts/login?uri=/stats')
+    cy.url().should('contain', '/accounts/login?failedPath=/stats')
   })
   it('joe cannot access stats', () => {
     cy.loginJoe()
