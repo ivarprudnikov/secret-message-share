@@ -33,11 +33,19 @@ describe('auth spec', () => {
   it('fails to create account because username is empty', () => {
     cy.visit('/accounts/new')
     cy.contains('Create your account').should('be.visible')
-    const random = Math.random().toString().substr(2, 9)
     cy.get('#password').type('pass')
     cy.get('#password2').type('pass')
     cy.get('.btn-primary').click()
     cy.contains('username is empty').should('be.visible')
+  })
+  it('fails to create account because username is not valid', () => {
+    cy.visit('/accounts/new')
+    cy.contains('Create your account').should('be.visible')
+    cy.get('#username').type('alert()')
+    cy.get('#password').type('pass')
+    cy.get('#password2').type('pass')
+    cy.get('.btn-primary').click()
+    cy.contains('username can only consist of').should('be.visible')
   })
   it('fails to create account because passwords do not match', () => {
     cy.visit('/accounts/new')

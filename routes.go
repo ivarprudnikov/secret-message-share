@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"html/template"
 	"log/slog"
+	"regexp"
 
 	"errors"
 	"net/http"
@@ -193,6 +194,10 @@ func createAccountHandler(sessions *sessions.CookieStore, store storage.UserStor
 		username := r.PostForm.Get("username")
 		if username == "" {
 			sendError(r.Context(), sess, w, "username is empty", nil)
+			return
+		}
+		if matched, err := regexp.MatchString(`^[A-Za-z0-9_-]+$`, username); err != nil || !matched {
+			sendError(r.Context(), sess, w, "username can only consist of letters, numbers, underscore (_) and dash (-)", nil)
 			return
 		}
 		password := r.PostForm.Get("password")
