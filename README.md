@@ -1,4 +1,4 @@
-# Secret message sharing platform (IN PROGRESS)
+# Secret message sharing platform
 
 [![Build](https://github.com/ivarprudnikov/secret-message-share/actions/workflows/build.yml/badge.svg)](https://github.com/ivarprudnikov/secret-message-share/actions/workflows/build.yml)
 
