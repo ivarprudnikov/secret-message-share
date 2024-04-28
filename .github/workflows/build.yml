@@ -12,6 +12,13 @@ jobs:
       - run: go version
       - run: go build -v ./...
       - run: go test -v ./...
+      - run: go vet ./...
+      - run: go mod verify
+      - id: govulncheck
+        uses: golang/govulncheck-action@v1
+        with:
+           go-version-file: go.mod
+           go-package: ./...
       - name: Install Cypress
         run: npm install cypress@13.7.3
       - name: Run Cypress tests
