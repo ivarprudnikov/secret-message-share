@@ -6,7 +6,7 @@ require (
 	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.11.1
 	github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.5.2
 	github.com/Azure/azure-sdk-for-go/sdk/data/aztables v1.2.0
-	github.com/gorilla/sessions v1.2.2
+	github.com/gorilla/sessions v1.3.0
 	golang.org/x/crypto v0.22.0
 )
 
